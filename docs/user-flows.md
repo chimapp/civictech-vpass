@@ -32,6 +32,13 @@
 - Active member? (comments on Chat regularly / regular activities in the channel)
 - 石油王 (Number of superchats / 小奇點 / 贈訂?)
 
+### System Features
+
+- Auto revocation of card if user cancels subscriptions
+- Card info changes would requires revocation of old card and issue a card (e.g. membership level changes, member badge changes, 卡面 changes)
+  - UX problem: How to notify Channel member to get the new card?
+  - 數位皮夾 feature request: Support this flow in UI and model re-issue of the same card
+
 ## Other Card Use Cases
 
 1. Integration with other platforms (e.g. Member-only discord, LINE, or etc)
