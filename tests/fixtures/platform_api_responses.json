@@ -1,0 +1,123 @@
+{
+  "description": "Mock responses from YouTube and Twitch APIs for testing",
+
+  "youtube": {
+    "channel_info": {
+      "kind": "youtube#channelListResponse",
+      "items": [
+        {
+          "id": "UCxxxxxxxxxxxxxx",
+          "snippet": {
+            "title": "測試頻道",
+            "description": "這是一個測試頻道",
+            "customUrl": "@testchannel",
+            "publishedAt": "2020-01-01T00:00:00Z"
+          },
+          "statistics": {
+            "viewCount": "1000000",
+            "subscriberCount": "50000",
+            "videoCount": "100"
+          }
+        }
+      ]
+    },
+
+    "member_info": {
+      "kind": "youtube#memberListResponse",
+      "items": [
+        {
+          "snippet": {
+            "memberDetails": {
+              "channelId": "UCyyyyyyyyyyyyyyyy",
+              "channelUrl": "https://www.youtube.com/channel/UCyyyyyyyyyyyyyyyy",
+              "displayName": "測試會員"
+            },
+            "membershipsDetails": {
+              "membershipsDuration": {
+                "memberSince": "2023-01-01T00:00:00Z"
+              },
+              "highestAccessibleLevel": "基本會員",
+              "highestAccessibleLevelDisplayName": "Basic Member"
+            }
+          }
+        }
+      ]
+    },
+
+    "oauth_token_response": {
+      "access_token": "ya29.mock_access_token_xxxxxxxx",
+      "expires_in": 3599,
+      "refresh_token": "1//mock_refresh_token_xxxxxxxx",
+      "scope": "https://www.googleapis.com/auth/youtube.readonly",
+      "token_type": "Bearer"
+    }
+  },
+
+  "twitch": {
+    "user_info": {
+      "data": [
+        {
+          "id": "12345678",
+          "login": "teststreamer",
+          "display_name": "TestStreamer",
+          "type": "partner",
+          "broadcaster_type": "partner",
+          "description": "這是一個測試實況主",
+          "profile_image_url": "https://static-cdn.jtvnw.net/user-default-pictures/test.png",
+          "created_at": "2020-01-01T00:00:00Z"
+        }
+      ]
+    },
+
+    "subscription_check": {
+      "data": [
+        {
+          "broadcaster_id": "12345678",
+          "broadcaster_login": "teststreamer",
+          "broadcaster_name": "TestStreamer",
+          "gifter_id": "",
+          "gifter_login": "",
+          "gifter_name": "",
+          "is_gift": false,
+          "tier": "1000",
+          "plan_name": "Channel Subscription (teststreamer)",
+          "user_id": "87654321",
+          "user_name": "testsubscriber",
+          "user_login": "testsubscriber"
+        }
+      ]
+    },
+
+    "oauth_token_response": {
+      "access_token": "mock_twitch_access_token_xxxxxxxx",
+      "expires_in": 14159,
+      "refresh_token": "mock_twitch_refresh_token_xxxxxxxx",
+      "scope": ["user:read:subscriptions", "channel:read:subscriptions"],
+      "token_type": "bearer"
+    }
+  },
+
+  "error_responses": {
+    "youtube_unauthorized": {
+      "error": {
+        "code": 401,
+        "message": "Invalid Credentials",
+        "errors": [
+          {
+            "message": "Invalid Credentials",
+            "domain": "global",
+            "reason": "authError",
+            "location": "Authorization",
+            "locationType": "header"
+          }
+        ]
+      }
+    },
+
+    "twitch_not_subscribed": {
+      "error": "Unauthorized",
+      "status": 401,
+      "message": "User is not subscribed to the channel"
+    }
+  }
+}

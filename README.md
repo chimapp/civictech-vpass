@@ -1,0 +1,73 @@
+# VPass - Channel Membership Verification Card System
+
+A Rust-based web application for issuing and verifying digital membership cards for YouTube and Twitch channel members.
+
+## Project Status
+
+🚧 **Project Scaffolding Complete** - Ready for implementation
+
+## Quick Start
+
+For detailed setup instructions, see [quickstart.md](specs/001-channel-membership-verification/quickstart.md)
+
+### Prerequisites
+
+- Rust (stable, latest)
+- PostgreSQL 14+
+- Docker (optional, recommended)
+
+### Quick Setup
+
+```bash
+# 1. Copy environment template
+cp .env.example .env
+# Edit .env with your OAuth credentials
+
+# 2. Start PostgreSQL
+docker-compose up -d postgres
+
+# 3. Run database migrations (TODO: implement)
+# sqlx migrate run
+
+# 4. Run the server
+cargo run
+```
+
+## Project Structure
+
+See [CLAUDE.md](CLAUDE.md) for complete project structure and development guidelines.
+
+## Documentation
+
+- **Feature Spec**: [specs/001-channel-membership-verification/spec.md](specs/001-channel-membership-verification/spec.md)
+- **API Contracts**: [specs/001-channel-membership-verification/contracts/openapi.yaml](specs/001-channel-membership-verification/contracts/openapi.yaml)
+- **Data Model**: [specs/001-channel-membership-verification/data-model.md](specs/001-channel-membership-verification/data-model.md)
+- **Implementation Tasks**: [specs/001-channel-membership-verification/tasks.md](specs/001-channel-membership-verification/tasks.md)
+
+## Architecture
+
+- **Language**: Rust
+- **Web Framework**: Axum
+- **Database**: PostgreSQL with SQLx
+- **OAuth**: YouTube Data API v3, Twitch API
+- **QR Codes**: qrcode crate
+
+## Development
+
+```bash
+# Run tests
+cargo test
+
+# Run linter
+cargo clippy
+
+# Format code
+cargo fmt
+
+# Watch mode (requires cargo-watch)
+cargo watch -x run
+```
+
+## License
+
+TBD
