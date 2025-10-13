@@ -18,13 +18,16 @@ A Rust-based web application for issuing and verifying digital membership cards 
 ## Technology Stack
 
 ### Web Framework
+
 - **Axum**: Main web framework built on tokio/hyper
 
 ### Database
+
 - **SQLx**: Compile-time checked queries with PostgreSQL
 - **Migrations**: Use `sqlx migrate` for schema management
 
 ### Key Dependencies
+
 - `oauth2`: OAuth 2.0 client for YouTube/Twitch integration
 - `reqwest`: HTTP client for platform APIs
 - `qrcode`: QR code generation
@@ -81,30 +84,19 @@ specs/                         # Feature specifications
 ## Common Commands
 
 ### Development
+
 ```bash
-# Build project
-cargo build
-
-# Run development server
-cargo run
-
-# Run with auto-reload
-cargo watch -x run
-
-# Run tests
-cargo test
-
-# Run specific test
-cargo test test_name
-
-# Format code
-cargo fmt
-
-# Run linter
-cargo clippy
+make dev              # Run development server with auto-reload
+make build            # Build project
+make test             # Run all tests
+make test TEST=name   # Run specific test
+make format           # Format code
+make check            # Check formatting and run linter
+make coverage         # Generate test coverage report
 ```
 
 ### Database
+
 ```bash
 # Run migrations
 sqlx migrate run
@@ -119,26 +111,11 @@ sqlx migrate revert
 cargo sqlx prepare
 ```
 
-### Testing
-```bash
-# Run all tests
-cargo test
-
-# Run integration tests only
-cargo test --test integration
-
-# Run with output
-cargo test -- --nocapture
-
-# Run with coverage
-cargo tarpaulin --out Html
-```
-
 ## Code Style
 
 - Follow Rust standard conventions
-- Use `rustfmt` for formatting (enforced by CI)
-- Pass `clippy` with no warnings
+- Use `make format` for formatting (enforced by CI)
+- Pass `make check` with no warnings
 - Prefer explicit error handling over `unwrap()`
 - Use `tracing` for logging, not `println!`
 - Write unit tests for business logic
@@ -147,6 +124,7 @@ cargo tarpaulin --out Html
 ## Architecture Guidelines
 
 ### OAuth Flow
+
 1. User initiates login via `/auth/{platform}/login`
 2. Redirect to platform OAuth consent
 3. Platform redirects back to `/auth/{platform}/callback`
@@ -154,6 +132,7 @@ cargo tarpaulin --out Html
 5. Store encrypted tokens in database
 
 ### Card Issuance
+
 1. Member authenticates via OAuth
 2. System retrieves membership data from platform API
 3. Validate membership status
@@ -161,12 +140,14 @@ cargo tarpaulin --out Html
 5. Sign payload with HMAC-SHA256
 
 ### Card Verification
+
 1. Organizer authenticates as channel owner
 2. Scan QR code from attendee's digital wallet
 3. Verify signature and check revocation status
 4. Log verification event
 
 ### Background Jobs
+
 - Cron job runs every 6 hours (configurable)
 - Checks subscription status via platform APIs
 - Revokes cards for canceled subscriptions
@@ -175,6 +156,7 @@ cargo tarpaulin --out Html
 ## Environment Variables
 
 Required in `.env`:
+
 ```
 DATABASE_URL=postgresql://postgres:password@localhost:5432/vpass_dev
 BASE_URL=http://localhost:3000
@@ -209,11 +191,3 @@ RUST_LOG=info,vpass=debug
 - API Contracts: `specs/001-channel-membership-verification/contracts/openapi.yaml`
 - Data Model: `specs/001-channel-membership-verification/data-model.md`
 - Setup Guide: `specs/001-channel-membership-verification/quickstart.md`
-
-## Recent Changes
-
-- 2025-10-12: Initial project setup with Rust/Axum/PostgreSQL stack
-- 001-channel-membership-verification: Added Rust implementation
-
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->

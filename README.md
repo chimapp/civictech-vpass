@@ -54,19 +54,7 @@ See [CLAUDE.md](CLAUDE.md) for complete project structure and development guidel
 
 ## Development
 
-```bash
-# Run tests
-cargo test
-
-# Run linter
-cargo clippy
-
-# Format code
-cargo fmt
-
-# Watch mode (requires cargo-watch)
-cargo watch -x run
-```
+See [CLAUDE.md](CLAUDE.md#common-commands) for all available development commands using Make or cargo.
 
 ## License
 
