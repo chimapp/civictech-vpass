@@ -9,7 +9,7 @@ pub struct OAuthSession {
     pub user_role: String, // "member" or "organizer"
     pub platform: String,  // "youtube" or "twitch"
     pub platform_user_id: String,
-    pub access_token: String,         // Stored encrypted
+    pub access_token: String,          // Stored encrypted
     pub refresh_token: Option<String>, // Stored encrypted
     pub token_expires_at: DateTime<Utc>,
     pub scope: String,

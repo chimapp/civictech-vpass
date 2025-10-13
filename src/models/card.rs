@@ -15,7 +15,7 @@ pub struct MembershipCard {
     pub subscription_start_date: NaiveDate,
     pub subscription_duration_months: Option<i32>,
     pub is_active_member: bool,
-    pub supporter_metrics: Option<JsonValue>, // JSONB field
+    pub supporter_metrics: Option<JsonValue>,  // JSONB field
     pub supplementary_data: Option<JsonValue>, // JSONB field
     pub qr_code_payload: String,
     pub qr_code_signature: String, // HMAC-SHA256 hex string

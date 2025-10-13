@@ -1,13 +1,13 @@
 // Models module - Database entity representations
 
+pub mod card;
 pub mod issuer;
 pub mod oauth_session;
-pub mod card;
-pub mod verification_event;
 pub mod revocation;
+pub mod verification_event;
 
+pub use card::MembershipCard;
 pub use issuer::CardIssuer;
 pub use oauth_session::OAuthSession;
-pub use card::MembershipCard;
-pub use verification_event::VerificationEvent;
 pub use revocation::Revocation;
+pub use verification_event::VerificationEvent;

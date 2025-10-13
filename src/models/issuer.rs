@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub struct CardIssuer {
     pub id: Uuid,
     pub issuer_type: String, // "official_channel" or "community"
-    pub platform: String,     // "youtube" or "twitch"
+    pub platform: String,    // "youtube" or "twitch"
     pub platform_channel_id: String,
     pub channel_name: String,
     pub is_verified: bool,
