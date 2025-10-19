@@ -132,7 +132,10 @@ curl -i -b "vpass_session=..." "http://localhost:3000/auth/session"
 curl -X POST \
   -H "Content-Type: application/json" \
   -b "vpass_session=..." \
-  -d '{"issuer_id": "123e4567-e89b-12d3-a456-426614174000"}' \
+  -d '{
+        "issuer_id": "123e4567-e89b-12d3-a456-426614174000",
+        "verification_comment_url": "https://www.youtube.com/watch?v=VIDEO_ID&lc=COMMENT_ID"
+      }' \
   "http://localhost:3000/cards/claim"
 ```
 
@@ -144,6 +147,7 @@ curl -X POST \
 - OAuth flows implemented in `src/api/auth.rs`
 - Card operations in `src/api/cards.rs`
 - Verification logic in `src/api/verification.rs`
+- Members-only comment verification implemented in `src/services/comment_verifier.rs`
 
 ## Future Enhancements
 

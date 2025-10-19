@@ -35,19 +35,16 @@
 **Status**: ✅ PASSED - All quality checks passed
 
 **Key Changes Made**:
-1. Resolved clarification on event organizer authentication: Uses platform OAuth to verify channel ownership
-2. Resolved clarification on member notification for card updates: Members re-authenticate through VPass to claim refreshed cards
-3. Added comprehensive OAuth authentication requirements (FR-001 to FR-005)
-4. Updated all user stories to reflect OAuth-based authentication flow
-5. Expanded Key Entities to include Platform Authentication Session
-6. Updated Assumptions to reflect OAuth 2.0 dependencies
-7. Added OAuth-related dependencies (DEP-002, DEP-004, DEP-008, DEP-009)
+1. Trimmed scope to member-side YouTube card issuance; organizer tooling moves to follow-up specs.
+2. Confirmed OAuth flow relies solely on Google OAuth 2.0 with youtube.readonly scope.
+3. Documented QR payload + signature expectations for 數位皮夾 compatibility.
+4. Clarified database entities limited to issuers, members, sessions, and cards for MVP.
+5. Updated assumptions/dependencies to remove Twitch and automated job requirements.
 
 **Architecture Insights**:
-- System architecture now centered on OAuth 2.0 integration with YouTube and Twitch
-- Eliminates manual proof submission in favor of automated API verification
-- Event organizers authenticate as channel owners for verification rights
-- Members re-authenticate to trigger card refresh on status changes
+- MVP architecture centers on an Axum + SQLx service issuing signed QR payloads for YouTube members after validating members-only video comments.
+- No background workers; issuance happens synchronously during OAuth callback.
+- Templates provide minimal guidance for claim flow; future specs will add verification UI and automation.
 
 ## Notes
 

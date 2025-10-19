@@ -33,16 +33,14 @@ This guide helps you set up the VPass development environment and run the applic
 
 You'll need OAuth credentials from:
 
-1. **YouTube Data API**:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create project → Enable YouTube Data API v3
-   - Create OAuth 2.0 credentials (Web application)
-   - Add redirect URI: `http://localhost:3000/auth/youtube/callback`
-
-2. **Twitch API**:
-   - Go to [Twitch Dev Console](https://dev.twitch.tv/console)
-   - Register application
-   - Add OAuth redirect URL: `http://localhost:3000/auth/twitch/callback`
+- **YouTube Data API**:
+  - Go to [Google Cloud Console](https://console.cloud.google.com/)
+  - Create a project → enable YouTube Data API v3
+  - Create OAuth 2.0 credentials (Web application)
+  - Add redirect URI: `http://localhost:3000/auth/youtube/callback`
+- **Verification Video**:
+  - Create or identify a members-only video on the issuer’s YouTube channel.
+  - Note the video ID; set `YOUTUBE_VERIFICATION_VIDEO_ID` in `.env` to point at this video for comment validation.
 
 ---
 
@@ -100,17 +98,12 @@ PORT=3000
 # YouTube OAuth
 YOUTUBE_CLIENT_ID=your_youtube_client_id.apps.googleusercontent.com
 YOUTUBE_CLIENT_SECRET=your_youtube_client_secret
-
-# Twitch OAuth
-TWITCH_CLIENT_ID=your_twitch_client_id
-TWITCH_CLIENT_SECRET=your_twitch_client_secret
+YOUTUBE_REDIRECT_URI=http://localhost:3000/auth/youtube/callback
+YOUTUBE_VERIFICATION_VIDEO_ID=your_members_only_video_id
 
 # Session Security
 SESSION_SECRET=generate_random_string_here_at_least_32_chars
 ENCRYPTION_KEY=generate_random_key_32_bytes_hex_encoded
-
-# Cron Schedule (optional, default: every 6 hours)
-SUBSCRIPTION_CHECK_SCHEDULE="0 */6 * * *"
 
 # Logging
 RUST_LOG=info,vpass=debug
@@ -179,8 +172,10 @@ curl http://localhost:3000/issuers
 ### 3. Test OAuth Flow
 
 Open browser to:
-- http://localhost:3000/auth/youtube/login?role=member
+- http://localhost:3000/auth/youtube/login
 - Should redirect to Google OAuth consent screen
+
+After signing in with a test member account, ensure the account can comment on the issuer’s members-only verification video identified by `YOUTUBE_VERIFICATION_VIDEO_ID`. The claim UI will prompt for a link to that comment to complete verification.
 
 ---
 
@@ -266,17 +261,27 @@ Create a script `scripts/seed_dev_data.sh`:
 ```bash
 #!/bin/bash
 
-# Insert test issuer
-psql $DATABASE_URL <<EOF
-INSERT INTO card_issuers (id, issuer_type, platform, platform_channel_id, channel_name, is_verified)
+# Insert or update test issuer
+psql $DATABASE_URL <<'EOF'
+INSERT INTO card_issuers (
+    id,
+    platform,
+    youtube_channel_id,
+    channel_handle,
+    channel_name,
+    is_active
+)
 VALUES (
     gen_random_uuid(),
-    'official_channel',
     'youtube',
     'UCxxxxx_test_channel',
+    '@testchannel',
     'Test Gaming Channel',
     TRUE
-);
+)
+ON CONFLICT (youtube_channel_id) DO UPDATE
+SET channel_name = EXCLUDED.channel_name,
+    updated_at = NOW();
 EOF
 
 echo "Test data seeded successfully"
@@ -360,10 +365,9 @@ psql $DATABASE_URL -c "SELECT 1"
 
 ### Issue: OAuth redirect fails with "redirect_uri_mismatch"
 
-**Solution**: Ensure redirect URI in platform console matches exactly
+**Solution**: Ensure redirect URI in Google Cloud Console matches exactly
 
 - YouTube: `http://localhost:3000/auth/youtube/callback`
-- Twitch: `http://localhost:3000/auth/twitch/callback`
 
 (No trailing slash, exact port number)
 
@@ -418,7 +422,6 @@ kill -9 $(lsof -ti:3000)
 - **Axum Guide**: https://docs.rs/axum/latest/axum/
 - **SQLx Guide**: https://docs.rs/sqlx/latest/sqlx/
 - **YouTube Data API**: https://developers.google.com/youtube/v3
-- **Twitch API**: https://dev.twitch.tv/docs/api/
 
 ---
 

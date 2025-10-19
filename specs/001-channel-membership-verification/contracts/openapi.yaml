@@ -1,142 +1,79 @@
 openapi: 3.0.3
 info:
-  title: VPass - Channel Membership Verification API
+  title: VPass - Channel Membership Card Issuance API (MVP)
   description: |
-    API for issuing and verifying digital membership cards for YouTube and Twitch channel members.
+    Member-facing endpoints for issuing digitally signed YouTube membership cards.
 
-    ## Authentication Flow
-    1. User initiates OAuth via `/auth/{platform}/login`
-    2. Platform redirects to `/auth/{platform}/callback` with authorization code
-    3. System exchanges code for access token and creates session
-    4. Subsequent requests use session cookie for authentication
-
-    ## Key Features
-    - OAuth2 integration with YouTube and Twitch
-    - QR code generation for digital wallet import
-    - Card verification by channel organizers
-    - Automatic card revocation via background job
-  version: 1.0.0
-  contact:
-    name: VPass Development Team
-
+    Organizer verification, automated revocation, and multi-platform support will be described in follow-up specifications.
+  version: 0.1.0
 servers:
-  - url: http://localhost:3000
-    description: Local development
   - url: https://vpass.example.com
     description: Production (placeholder)
-
+  - url: http://localhost:3000
+    description: Local development
 tags:
   - name: Authentication
-    description: OAuth2 flows for member and organizer authentication
+    description: YouTube OAuth flow and session endpoints
+  - name: Issuers
+    description: Fetch configured YouTube channels that offer cards
   - name: Cards
-    description: Membership card issuance and management
-  - name: Verification
-    description: Card verification by event organizers
-  - name: Admin
-    description: Administrative endpoints (future)
+    description: Claim and retrieve membership cards for the authenticated member
 
 paths:
-  /auth/{platform}/login:
+  /auth/youtube/login:
     get:
-      summary: Initiate OAuth2 login flow
       tags: [Authentication]
-      parameters:
-        - name: platform
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [youtube, twitch]
-          description: Platform to authenticate with
-        - name: role
-          in: query
-          required: true
-          schema:
-            type: string
-            enum: [member, organizer]
-          description: Whether user is claiming card (member) or verifying cards (organizer)
-        - name: redirect_after
-          in: query
-          required: false
-          schema:
-            type: string
-          description: URL to redirect to after successful authentication
+      summary: Begin YouTube OAuth login
+      description: Redirects the user agent to Google OAuth consent for the configured YouTube application.
       responses:
         '302':
-          description: Redirect to platform OAuth consent screen
+          description: Redirect to Google OAuth authorization endpoint
           headers:
             Location:
               schema:
                 type: string
-              description: Platform OAuth URL
+              description: Google OAuth authorize URL containing state and PKCE challenge
         '400':
-          description: Invalid parameters
+          description: Unable to create login redirect (configuration error)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /auth/{platform}/callback:
+  /auth/youtube/callback:
     get:
-      summary: OAuth2 callback handler
       tags: [Authentication]
+      summary: Handle YouTube OAuth callback
+      description: Exchanges the authorization code for tokens, persists the session, and redirects to the claim card UI.
       parameters:
-        - name: platform
-          in: path
-          required: true
+        - in: query
+          name: code
           schema:
             type: string
-            enum: [youtube, twitch]
-        - name: code
-          in: query
           required: true
+          description: Authorization code returned by Google OAuth
+        - in: query
+          name: state
           schema:
             type: string
-          description: Authorization code from platform
-        - name: state
-          in: query
           required: true
-          schema:
-            type: string
-          description: CSRF protection state parameter
+          description: CSRF protection value issued during login
       responses:
         '302':
-          description: Redirect to application page after successful auth
+          description: Successful login, redirects to claim card page
           headers:
-            Set-Cookie:
-              schema:
-                type: string
-              description: Session cookie
             Location:
               schema:
                 type: string
-              description: Redirect URL (default: /cards/claim or /verify)
+              description: URL to redirect the member post-login
         '400':
-          description: OAuth error (denied, invalid code, etc.)
+          description: Missing/invalid state or authorization code
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /auth/logout:
-    post:
-      summary: Log out current user
-      tags: [Authentication]
-      security:
-        - sessionCookie: []
-      responses:
-        '200':
-          description: Successfully logged out
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Logged out successfully"
         '401':
-          description: Not authenticated
+          description: Token exchange failed or membership scope not granted
           content:
             application/json:
               schema:
@@ -144,80 +81,118 @@ paths:
 
   /auth/session:
     get:
-      summary: Get current session information
       tags: [Authentication]
-      security:
-        - sessionCookie: []
+      summary: Retrieve current authenticated session
       responses:
         '200':
-          description: Session information
+          description: Current session details
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionInfo'
         '401':
-          description: Not authenticated
+          description: No active session
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /cards/claim:
+  /auth/logout:
     post:
-      summary: Claim a new membership card
-      description: |
-        Authenticated member requests a membership card for a specific channel issuer.
-        System retrieves membership data from platform API and issues card if valid.
+      tags: [Authentication]
+      summary: Terminate current session
+      responses:
+        '204':
+          description: Session terminated successfully
+        '401':
+          description: No active session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /issuers:
+    get:
+      tags: [Issuers]
+      summary: List active YouTube issuers
+      responses:
+        '200':
+          description: Array of issuers available for card claims
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Issuer'
+        '401':
+          description: Member not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cards:
+    get:
       tags: [Cards]
-      security:
-        - sessionCookie: []
+      summary: List cards belonging to the authenticated member
+      responses:
+        '200':
+          description: Cards ordered newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MembershipCard'
+        '401':
+          description: No active session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Cards]
+      summary: Claim a new membership card
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - issuer_id
+              required: [issuer_id, verification_comment_url]
               properties:
                 issuer_id:
                   type: string
                   format: uuid
-                  description: ID of the channel issuer to claim card from
+                  description: Issuer chosen by the member
+                verification_comment_url:
+                  type: string
+                  description: YouTube URL pointing to the member's comment on the issuer’s members-only verification video
                 supplementary_data:
                   type: object
                   additionalProperties: true
-                  description: Optional user-provided data (e.g., display preferences)
+                  description: Optional member-provided fields to store with the card
       responses:
         '201':
           description: Card successfully issued
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MembershipCard'
+                $ref: '#/components/schemas/CardIssueResponse'
         '400':
-          description: Invalid request or member not eligible
+          description: Validation error (missing issuer, duplicate card, inactive membership)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                notSubscribed:
-                  value:
-                    error: "Not subscribed"
-                    message: "You are not a member of this channel"
-                duplicateCard:
-                  value:
-                    error: "Duplicate card"
-                    message: "You already have an active card for this channel"
         '401':
-          description: Not authenticated as member
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '503':
-          description: Platform API unavailable
+          description: No active session or YouTube membership not confirmed
           content:
             application/json:
               schema:
@@ -225,13 +200,11 @@ paths:
 
   /cards/{card_id}:
     get:
-      summary: Get card details
       tags: [Cards]
-      security:
-        - sessionCookie: []
+      summary: Retrieve a single membership card
       parameters:
-        - name: card_id
-          in: path
+        - in: path
+          name: card_id
           required: true
           schema:
             type: string
@@ -243,47 +216,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MembershipCard'
+        '401':
+          description: No active session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Card not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Not authenticated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /cards/my-cards:
-    get:
-      summary: List all cards for authenticated member
-      tags: [Cards]
-      security:
-        - sessionCookie: []
-      parameters:
-        - name: include_revoked
-          in: query
-          required: false
-          schema:
-            type: boolean
-            default: false
-          description: Whether to include revoked cards
-      responses:
-        '200':
-          description: List of cards
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  cards:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/MembershipCard'
-        '401':
-          description: Not authenticated as member
+          description: Card not found or does not belong to the member
           content:
             application/json:
               schema:
@@ -291,362 +231,146 @@ paths:
 
   /cards/{card_id}/qr:
     get:
-      summary: Get QR code for card
       tags: [Cards]
-      security:
-        - sessionCookie: []
+      summary: Retrieve QR code for a membership card
       parameters:
-        - name: card_id
-          in: path
+        - in: path
+          name: card_id
           required: true
           schema:
             type: string
             format: uuid
-        - name: format
-          in: query
-          required: false
+        - in: query
+          name: format
           schema:
             type: string
             enum: [svg, png, data_url]
-            default: svg
+          description: Preferred QR output format (default svg)
       responses:
         '200':
-          description: QR code image
+          description: QR code payload
           content:
-            image/svg+xml:
-              schema:
-                type: string
-                format: binary
-            image/png:
-              schema:
-                type: string
-                format: binary
             application/json:
               schema:
-                type: object
-                properties:
-                  data_url:
-                    type: string
-                    example: "data:image/png;base64,iVBORw0KGgo..."
+                $ref: '#/components/schemas/QRCodeResponse'
+        '401':
+          description: No active session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Card not found
+          description: Card not found or does not belong to the member
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Not authenticated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /verify/scan:
-    post:
-      summary: Verify a scanned QR code
-      description: |
-        Authenticated organizer scans a membership card QR code.
-        System validates the card signature, checks revocation status,
-        and returns verification result.
-      tags: [Verification]
-      security:
-        - sessionCookie: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - qr_payload
-              properties:
-                qr_payload:
-                  type: string
-                  description: Raw QR code data (JSON string)
-                context:
-                  type: object
-                  additionalProperties: true
-                  description: Optional context (event name, location, etc.)
-      responses:
-        '200':
-          description: Verification result
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/VerificationResult'
-        '400':
-          description: Invalid QR data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Not authenticated as organizer
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /verify/history:
-    get:
-      summary: Get verification history for authenticated organizer
-      tags: [Verification]
-      security:
-        - sessionCookie: []
-      parameters:
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 50
-            maximum: 200
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
-      responses:
-        '200':
-          description: List of verification events
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  events:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/VerificationEvent'
-                  total:
-                    type: integer
-                  limit:
-                    type: integer
-                  offset:
-                    type: integer
-        '401':
-          description: Not authenticated as organizer
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /issuers:
-    get:
-      summary: List available card issuers
-      tags: [Cards]
-      parameters:
-        - name: platform
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [youtube, twitch]
-        - name: verified_only
-          in: query
-          schema:
-            type: boolean
-            default: true
-      responses:
-        '200':
-          description: List of issuers
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  issuers:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/CardIssuer'
 
 components:
-  securitySchemes:
-    sessionCookie:
-      type: apiKey
-      in: cookie
-      name: vpass_session
-      description: Session cookie set after OAuth authentication
-
   schemas:
-    ErrorResponse:
-      type: object
-      required:
-        - error
-        - message
-      properties:
-        error:
-          type: string
-          description: Machine-readable error code
-        message:
-          type: string
-          description: Human-readable error message
-        details:
-          type: object
-          additionalProperties: true
-          description: Additional error details
-
     SessionInfo:
       type: object
-      required:
-        - user_role
-        - platform
-        - platform_user_id
-        - authenticated_at
       properties:
-        user_role:
-          type: string
-          enum: [member, organizer]
-        platform:
-          type: string
-          enum: [youtube, twitch]
-        platform_user_id:
-          type: string
-        issuer_id:
-          type: string
-          format: uuid
-          description: Only present for organizer sessions
-        channel_name:
-          type: string
-          description: Only present for organizer sessions
-        authenticated_at:
-          type: string
-          format: date-time
-
-    CardIssuer:
+        authenticated:
+          type: boolean
+        member:
+          type: object
+          nullable: true
+          properties:
+            youtube_user_id:
+              type: string
+            display_name:
+              type: string
+            last_authenticated_at:
+              type: string
+              format: date-time
+    Issuer:
       type: object
-      required:
-        - id
-        - issuer_type
-        - platform
-        - channel_name
-        - is_verified
+      required: [id, channel_name, verification_video_id, default_membership_label]
       properties:
         id:
           type: string
           format: uuid
-        issuer_type:
-          type: string
-          enum: [official_channel, community]
-        platform:
-          type: string
-          enum: [youtube, twitch]
-        platform_channel_id:
-          type: string
-          description: Platform-specific channel ID
         channel_name:
           type: string
-        is_verified:
-          type: boolean
-        created_at:
+        channel_handle:
           type: string
-          format: date-time
-
+          nullable: true
+        youtube_channel_id:
+          type: string
+        is_active:
+          type: boolean
+        verification_video_id:
+          type: string
+        default_membership_label:
+          type: string
     MembershipCard:
       type: object
       required:
         - id
-        - issuer
-        - platform
-        - member_platform_id
-        - member_display_name
-        - subscription_start_date
-        - is_active_member
-        - is_revoked
+        - issuer_id
+        - member_id
+        - membership_level_label
+        - membership_confirmed_at
+        - verification_comment_id
+        - verification_video_id
         - issued_at
       properties:
         id:
           type: string
           format: uuid
-        issuer:
-          $ref: '#/components/schemas/CardIssuer'
-        platform:
+        issuer_id:
           type: string
-          enum: [youtube, twitch]
-        member_platform_id:
+          format: uuid
+        member_id:
           type: string
-        member_display_name:
+          format: uuid
+        membership_level_label:
           type: string
-        membership_level:
+        membership_confirmed_at:
           type: string
-          nullable: true
-        subscription_start_date:
+          format: date-time
+        verification_comment_id:
           type: string
-          format: date
-        subscription_duration_months:
-          type: integer
-          nullable: true
-        is_active_member:
-          type: boolean
-        supporter_metrics:
+        verification_video_id:
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        qr_signature:
+          type: string
+          description: Hex-encoded HMAC signature
+        qr_payload:
           type: object
           additionalProperties: true
-          nullable: true
         supplementary_data:
           type: object
           additionalProperties: true
           nullable: true
-        is_revoked:
-          type: boolean
-        needs_refresh:
-          type: boolean
-        issued_at:
-          type: string
-          format: date-time
-        revoked_at:
-          type: string
-          format: date-time
-          nullable: true
-        qr_code_url:
-          type: string
-          description: URL to retrieve QR code
-          example: "/cards/123e4567-e89b-12d3-a456-426614174000/qr"
-
-    VerificationResult:
+    CardIssueResponse:
       type: object
-      required:
-        - result
-        - card_id
-        - verified_at
       properties:
-        result:
-          type: string
-          enum: [success, revoked, invalid_signature, wrong_issuer, not_found]
-        card_id:
-          type: string
-          format: uuid
-        card_details:
+        card:
           $ref: '#/components/schemas/MembershipCard'
-          description: Only present if result is 'success'
+        qr:
+          $ref: '#/components/schemas/QRCodeResponse'
+    QRCodeResponse:
+      type: object
+      properties:
+        format:
+          type: string
+          enum: [svg, png, data_url]
+        value:
+          type: string
+          description: Base64 or inline SVG string depending on format
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
         message:
           type: string
-          description: Human-readable result message
-        verified_at:
-          type: string
-          format: date-time
-
-    VerificationEvent:
-      type: object
-      required:
-        - id
-        - card_id
-        - verification_result
-        - verified_at
-      properties:
-        id:
-          type: string
-          format: uuid
-        card_id:
-          type: string
-          format: uuid
-        card_member_name:
-          type: string
-        verification_result:
-          type: string
-          enum: [success, revoked, invalid_signature, wrong_issuer]
-        verification_context:
+        details:
           type: object
           additionalProperties: true
-          nullable: true
-        verified_at:
-          type: string
-          format: date-time

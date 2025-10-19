@@ -1,145 +1,130 @@
-# Implementation Plan: Channel Membership Verification Card System
+# Implementation Plan: Channel Membership Verification Card System (MVP)
 
-**Branch**: `001-channel-membership-verification` | **Date**: 2025-10-12 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/001-channel-membership-verification/spec.md`
-
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+**Branch**: `001-channel-membership-verification` | **Date**: 2025-10-12 | **Spec**: [spec.md](./spec.md)  
+**Input**: MVP feature specification scoped to YouTube member-side issuance.
 
 ## Summary
 
-Build a membership card issuance and verification system for YouTube/Twitch channel members. Members authenticate via platform OAuth, system retrieves membership data from platform APIs, generates QR codes compatible with 數位皮夾 (digital wallet), and provides verification interface for event organizers. Background cron job monitors subscription status for automatic card revocation.
+Deliver a production-ready slice that lets YouTube channel members authenticate, prove their active membership by posting a comment on a members-only verification video, and receive a digitally signed QR code compatible with 數位皮夾. Organizer verification, automated revocation, and multi-platform support are deferred to later specs, so this plan concentrates on the member issuance flow, secure token handling, and minimal templating needed to guide the user through the process.
 
 ## Technical Context
 
-**Language/Version**: Rust (stable, latest)
-**Primary Dependencies**:
-- Web framework: NEEDS CLARIFICATION (Axum vs Actix-web vs Rocket)
-- OAuth client library: NEEDS CLARIFICATION (oauth2 crate ecosystem)
-- Database ORM/query builder: NEEDS CLARIFICATION (Diesel vs SQLx vs SeaORM)
-- QR code generation: NEEDS CLARIFICATION (qrcode crate vs alternatives)
-- HTTP client for platform APIs: NEEDS CLARIFICATION (reqwest vs hyper)
+- **Language/Version**: Rust (stable, latest).
+- **Primary crates**: Axum (web), SQLx (PostgreSQL, async), `oauth2` + Reqwest (OAuth + HTTP), `qrcode` (QR generation), Askama (HTML templates), tower-sessions + tower-sessions-sqlx-store (session management), Serde, Tracing, Config, Secrecy, Ring (AEAD for token encryption), ThisError/Anyhow for error handling.
+- **Storage**: PostgreSQL for issuers, OAuth sessions, membership cards.
+- **Runtime**: Tokio async runtime; deploy as single binary (no background workers needed yet).
+- **Testing**: `cargo test` (unit + integration) once scaffolding exists, though automated tests may be stubbed in later milestone.
+- **Target Platform**: Linux container.
 
-**Storage**: PostgreSQL (stores cards, revocations, OAuth tokens, verification events)
-**Testing**: cargo test (unit + integration tests)
-**Target Platform**: Linux server (containerized deployment assumed)
-**Project Type**: Web application (backend-heavy with frontend for OAuth flows and QR scanning)
-**Performance Goals**:
-- Card issuance: < 5 seconds end-to-end (per SC-001)
-- Verification: < 3 seconds per scan (per SC-002)
-- Support 10+ concurrent verifiers (per SC-006)
-
-**Constraints**:
-- Must securely store OAuth tokens (FR-030)
-- Must handle platform API rate limits (AS-010)
-- Requires internet connectivity (AS-008)
-- QR code format compatibility with 數位皮夾 (FR-009)
-
-**Scale/Scope**:
-- Initial deployment: small-scale (< 1000 cards issued)
-- Multiple channel issuers supported
-- YouTube + Twitch platform integration
-- Future: Discord/Telegram integration (out of scope for v1)
-
-## Constitution Check
-
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
-
-**Status**: ✅ PASSED (No constitution file exists yet - no gates to evaluate)
-
-**Note**: Constitution file at `.specify/memory/constitution.md` is a template without specific principles. Once project constitution is established, re-evaluate this plan against defined gates.
-
-## Project Structure
-
-### Documentation (this feature)
+## Project Structure (MVP)
 
 ```
-specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
-```
+specs/001-channel-membership-verification/
+├── plan.md
+├── spec.md
+├── research.md
+├── data-model.md
+├── quickstart.md
+└── contracts/
 
-### Source Code (repository root)
-
-```
 src/
-├── main.rs                    # Application entry point, web server setup
-├── models/                    # Database models (Card, Issuer, Member, etc.)
+├── main.rs                      # Axum app bootstrap
+├── config.rs                    # Config loader (env + defaults)
+├── error.rs                     # Application error types
+├── db/
+│   └── mod.rs                   # SQLx connection pool helpers
+├── models/
 │   ├── mod.rs
-│   ├── card.rs
 │   ├── issuer.rs
-│   ├── member.rs
 │   ├── oauth_session.rs
-│   ├── verification_event.rs
-│   └── revocation.rs
-├── services/                  # Business logic services
+│   ├── member.rs                # Optional cached profile info
+│   └── card.rs
+├── services/
 │   ├── mod.rs
-│   ├── oauth/                # OAuth integration (YouTube, Twitch)
+│   ├── encryption.rs            # AEAD helpers for tokens
+│   ├── signature.rs             # HMAC signing for QR payloads
+│   ├── oauth/
 │   │   ├── mod.rs
-│   │   ├── youtube.rs
-│   │   └── twitch.rs
-│   ├── card_issuer.rs        # Card issuance logic
-│   ├── card_verifier.rs      # Card verification logic
-│   ├── qr_generator.rs       # QR code generation
-│   └── membership_checker.rs # Platform API membership validation
-├── api/                       # HTTP API endpoints
+│   │   └── youtube.rs
+│   ├── comment_verifier.rs      # Members-only comment lookup & validation
+│   ├── card_issuer.rs           # Core issuance workflow
+│   └── qr_generator.rs          # Payload assembly + QR rendering
+├── api/
 │   ├── mod.rs
-│   ├── auth.rs               # OAuth callbacks
-│   ├── cards.rs              # Card claiming endpoints
-│   ├── verification.rs       # Verification endpoints
-│   └── middleware/           # Auth middleware, error handling
+│   ├── auth.rs                  # Login/callback/logout/session endpoints
+│   ├── cards.rs                 # Claim/list/show/qr routes
+│   └── middleware/
 │       ├── mod.rs
-│       └── session.rs
-├── db/                        # Database connection, migrations
-│   ├── mod.rs
-│   ├── schema.rs             # Generated schema (Diesel) or manual (SQLx)
-│   └── migrations/
-├── jobs/                      # Cron job logic
-│   ├── mod.rs
-│   └── subscription_checker.rs  # Periodic subscription status check
-├── config.rs                  # Configuration management
-├── error.rs                   # Error types
-└── lib.rs                     # Library exports for testing
+│       ├── session.rs
+│       └── auth.rs              # Role enforcement (member-only)
+├── web/
+│   └── templates/
+│       ├── oauth_callback.html
+│       └── claim_card.html
+└── lib.rs                       # Optional for shared test helpers
 
-web/                           # Frontend (minimal, mainly OAuth redirects + QR scanner)
-├── static/
-│   ├── css/
-│   └── js/
-│       └── qr-scanner.js     # QR code scanning interface
-└── templates/                 # HTML templates (if using template engine)
-    ├── claim_card.html
-    ├── verify_card.html
-    └── oauth_callback.html
+migrations/
+└── 2025XXXXXXXX_create_initial_schema.sql
 
-tests/
-├── integration/              # Integration tests (API endpoints, DB)
-│   ├── card_issuance_test.rs
-│   ├── verification_test.rs
-│   └── oauth_flow_test.rs
-├── unit/                     # Unit tests (services, models)
-│   ├── qr_generator_test.rs
-│   └── membership_checker_test.rs
-└── fixtures/                 # Test data, mock responses
-    └── platform_api_responses.json
+tests/                           # Placeholder for future integration/unit tests
+├── integration/
+└── unit/
 
-migrations/                   # Database migrations (Diesel/SQLx format)
-└── [timestamp]_create_initial_schema.sql
-
-Cargo.toml                    # Rust dependencies
-.env.example                  # Environment variables template
-docker-compose.yml            # PostgreSQL + app container setup
+Cargo.toml, .env.example, docker-compose.yml
 ```
 
-**Structure Decision**: Web application with backend-heavy Rust service. Frontend is minimal (static HTML/JS for OAuth redirects and QR scanning UI). Cron job runs as separate process or integrated scheduler within main binary.
+## Delivery Phases
 
-## Complexity Tracking
+1. **Phase 1 — Project Setup**
+   - Initialize the Rust workspace (`cargo init`).
+   - Establish base directories, `.gitignore`, and Rust toolchain configuration.
+   - Configure `Cargo.toml` with Axum, SQLx (postgres + runtime-tokio-rustls), oauth2, Reqwest, tower-sessions, qrcode, Askama, Serde, Tracing, Config, Ring, Secrecy, ThisError, Anyhow.
+   - Provide infrastructure helpers (.env.example, docker-compose with Postgres).
 
-*Fill ONLY if Constitution Check has violations that must be justified*
+2. **Phase 2 — Foundation**
+   - Configure application settings loading (`config.rs`).
+   - Establish SQLx connection pool module and baseline migrations (issuers, oauth_sessions, membership_cards, members).
+   - Implement domain models with SQLx queries.
+   - Add error handling, encryption utilities (AES-256-GCM), signature helper (HMAC-SHA256), session middleware, and authentication middleware.
+   - Bootstrap Axum app with tracing, shared state injection, and graceful shutdown.
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+3. **Phase 3 — User Story 1 (YouTube Card Issuance)**
+   - Implement YouTube OAuth client + coordinator (state/PKCE, token exchange, refresh).
+   - Implement comment verification service (YouTube comment API, validation rules, rate-limit aware).
+   - Build QR generator (payload assembly, signing, qrcode rendering).
+   - Implement issuance service (duplicate prevention, DB writes, error surfacing).
+   - Expose auth + card API endpoints and hook them into templates.
+   - Create minimal Askama templates for OAuth callback and card claiming UI.
+
+4. **Phase 4 — Polish & Readiness**
+  - Add request ID + tracing instrumentation covering OAuth, comment verification, issuance.
+   - Provide health endpoint and optional metrics stub if ops requires it.
+   - Document setup/operation in README, quickstart validation, deployment notes (including key rotation guidance).
+   - Run formatting (`cargo fmt`) and linting (`cargo clippy`) as part of final QA.
+
+## Security & Reliability Focus
+
+- **Secrets**: Store encryption keys/YouTube client secrets via env vars for development; document path to a managed secret store for production. Rotate AEAD keys using key versioning policy.
+- **Token Handling**: Encrypt access/refresh tokens using `ring::aead`, mask tokens in logs, and ensure decrypt operations are centralized.
+- **API Rate Limits**: Implement shared HTTP client with retry/backoff and minimal caching of comment lookups per issuance request.
+- **Observability**: Wrap OAuth/callback, comment verifier, card issuance, and error paths with structured `tracing` spans and metrics counters supporting SC-001/SC-004/SC-007.
+- **Data Integrity**: Use database constraints (unique indexes) to enforce one active card per member/issuer pair; ensure QR signatures include issuer + card identifiers for future verification.
+
+## Risks & Mitigations
+
+- **YouTube API Quotas**: Mitigate with single-call-per-issuance design and alerting if quotas near limits.
+- **Wallet Format Drift**: Coordinate early with 數位皮夾 team; keep QR payload builder encapsulated for rapid updates.
+- **Future Expansion**: Design services (OAuth, comment verifier, card issuer) with traits or enums so Twitch/community support can be layered in without heavy refactoring.
+
+## Deliverables
+
+- Running Axum service that issues YouTube membership cards end-to-end.
+- Database schema, migrations, and seed data for development use.
+- Minimal frontend templates guiding the member issuance flow.
+- Documentation covering setup, secrets, and operational checks.
+
+## Post-MVP Follow-ups
+
+- Organizer verification spec (`002-card-verification`).
+- Revocation/refresh automation (`003-card-lifecycle-automation`).
+- Multi-platform issuer support (`00X-multi-platform`).
