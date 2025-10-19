@@ -31,7 +31,9 @@ pub struct TokenData {
 }
 
 /// YouTube OAuth scopes needed for membership verification
-pub const YOUTUBE_READONLY_SCOPE: &str = "https://www.googleapis.com/auth/youtube.readonly";
+/// Note: youtube.force-ssl is required for accessing comments via the API.
+/// Despite being a read operation, youtube.readonly is insufficient and returns 403.
+pub const YOUTUBE_FORCE_SSL_SCOPE: &str = "https://www.googleapis.com/auth/youtube.force-ssl";
 
 /// Builds the YouTube OAuth client
 fn build_oauth_client(
@@ -71,7 +73,7 @@ pub fn build_auth_url(
 
     let (auth_url, csrf_token) = client
         .authorize_url(CsrfToken::new_random)
-        .add_scope(Scope::new(YOUTUBE_READONLY_SCOPE.to_string()))
+        .add_scope(Scope::new(YOUTUBE_FORCE_SSL_SCOPE.to_string()))
         .set_pkce_challenge(pkce_challenge)
         .url();
 
@@ -115,7 +117,7 @@ pub async fn exchange_code(
     let scopes = token_response
         .scopes()
         .map(|s| s.iter().map(|scope| scope.to_string()).collect())
-        .unwrap_or_else(|| vec![YOUTUBE_READONLY_SCOPE.to_string()]);
+        .unwrap_or_else(|| vec![YOUTUBE_FORCE_SSL_SCOPE.to_string()]);
 
     Ok(TokenData {
         access_token: token_response.access_token().secret().clone(),
@@ -150,7 +152,7 @@ pub async fn refresh_access_token(
     let scopes = token_response
         .scopes()
         .map(|s| s.iter().map(|scope| scope.to_string()).collect())
-        .unwrap_or_else(|| vec![YOUTUBE_READONLY_SCOPE.to_string()]);
+        .unwrap_or_else(|| vec![YOUTUBE_FORCE_SSL_SCOPE.to_string()]);
 
     Ok(TokenData {
         access_token: token_response.access_token().secret().clone(),
@@ -183,7 +185,7 @@ mod tests {
         assert!(auth_url.contains("accounts.google.com"));
         assert!(auth_url.contains("client_id=test-client-id"));
         assert!(auth_url.contains("redirect_uri="));
-        assert!(auth_url.contains("youtube.readonly"));
+        assert!(auth_url.contains("youtube.force-ssl"));
 
         // Verify CSRF token and PKCE verifier are generated
         assert!(!csrf_token.is_empty());

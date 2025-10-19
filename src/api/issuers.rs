@@ -72,6 +72,7 @@ async fn list_issuers(State(state): State<AppState>) -> Result<Html<String>, Iss
                         </div>
                     </div>
                     <div class="actions">
+                        <a href="/channels/{}/claim" class="btn btn-primary">Claim Card</a>
                         <a href="/issuers/{}/edit" class="btn btn-secondary">Edit</a>
                         <form action="/issuers/{}/toggle" method="POST" style="display: inline;">
                             <button type="submit" class="btn btn-warning">{}</button>
@@ -93,6 +94,7 @@ async fn list_issuers(State(state): State<AppState>) -> Result<Html<String>, Iss
                 issuer.channel_handle.as_deref().unwrap_or("N/A"),
                 issuer.verification_video_id,
                 issuer.default_membership_label,
+                issuer.id,
                 issuer.id,
                 issuer.id,
                 if issuer.is_active {

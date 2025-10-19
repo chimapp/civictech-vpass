@@ -174,8 +174,8 @@ async fn youtube_callback(
 
     tracing::info!(member_id = %member.id, "Member authenticated successfully");
 
-    // Redirect to claim page
-    Ok(Redirect::to("/cards/claim"))
+    // Redirect to issuers page
+    Ok(Redirect::to("/issuers"))
 }
 
 /// Logs out the user
@@ -357,7 +357,7 @@ async fn home_page(session: Session) -> Result<axum::response::Html<String>, Aut
         <p class="subtitle">Membership System</p>
         <div class="status-bar">● Connected</div>
         <div class="menu">
-            <a href="/cards/claim" class="button">Claim Card</a>
+            <a href="/issuers" class="button">Browse Channels</a>
             <a href="/cards/my-cards" class="button">My Cards</a>
             <a href="/auth/logout" class="button danger">Sign Out</a>
         </div>

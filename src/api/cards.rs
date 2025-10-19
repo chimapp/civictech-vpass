@@ -15,7 +15,7 @@ use crate::api::middleware::{
     auth::{get_authenticated_member, AuthError},
     session::{AppState, SESSION_KEY_SESSION_STARTED_AT},
 };
-use crate::models::{card::MembershipCard, oauth_session::OAuthSession};
+use crate::models::{card::MembershipCard, issuer::CardIssuer, oauth_session::OAuthSession};
 use crate::services::{card_issuer, qr_generator};
 
 #[derive(Debug)]
@@ -49,94 +49,120 @@ impl IntoResponse for CardsError {
     }
 }
 
-/// Shows the claim card page
-async fn claim_page(
-    State(_state): State<AppState>,
+/// Shows the claim card page for a specific channel/issuer
+async fn claim_page_for_channel(
+    State(state): State<AppState>,
+    Path(issuer_id): Path<Uuid>,
     session: Session,
 ) -> Result<Html<String>, CardsError> {
     let _member = get_authenticated_member(&session)
         .await
         .map_err(CardsError::AuthError)?;
 
-    let html = r#"
+    // Fetch the issuer to display channel information
+    let issuer = CardIssuer::find_by_id(&state.pool, issuer_id)
+        .await
+        .map_err(CardsError::DatabaseError)?
+        .ok_or(CardsError::NotFound)?;
+
+    let html = format!(
+        r#"
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Claim Card - VPass</title>
+    <title>Claim Card - {} - VPass</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
             font-family: 'Helvetica Neue', Arial, sans-serif;
             background: #E8E6E0;
             color: #000;
             min-height: 100vh;
             padding: 20px;
-        }
-        .container {
+        }}
+        .container {{
             max-width: 700px;
             margin: 40px auto;
-        }
-        .header {
+        }}
+        .header {{
             margin-bottom: 60px;
-        }
-        h1 {
+        }}
+        h1 {{
             font-size: 48px;
             font-weight: 300;
             letter-spacing: -1px;
             color: #1E3A5F;
             margin-bottom: 8px;
-        }
-        .subtitle {
+        }}
+        .subtitle {{
             font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 2px;
             color: #666;
-        }
-        .back {
+        }}
+        .back {{
             display: inline-block;
             color: #666;
             text-decoration: none;
             font-size: 13px;
             margin-bottom: 40px;
             transition: color 0.2s;
-        }
-        .back:hover { color: #1E3A5F; }
-        .back::before { content: '← '; }
-        .info-box {
+        }}
+        .back:hover {{ color: #1E3A5F; }}
+        .back::before {{ content: '← '; }}
+        .channel-info {{
+            background: #F5F3ED;
+            padding: 32px;
+            margin-bottom: 40px;
+            border-left: 3px solid #1E3A5F;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }}
+        .channel-info h2 {{
+            font-size: 24px;
+            font-weight: 500;
+            color: #1E3A5F;
+            margin-bottom: 16px;
+        }}
+        .channel-info .channel-id {{
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            color: #666;
+        }}
+        .info-box {{
             background: #F5F3ED;
             padding: 32px;
             margin-bottom: 40px;
             border-left: 3px solid #B8915F;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-        }
-        .info-box h2 {
+        }}
+        .info-box h2 {{
             font-size: 14px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: #B8915F;
             margin-bottom: 20px;
-        }
-        .info-box ol {
+        }}
+        .info-box ol {{
             margin-left: 20px;
             line-height: 1.8;
             color: #444;
-        }
-        .info-box li {
+        }}
+        .info-box li {{
             font-size: 14px;
             margin-bottom: 8px;
-        }
-        form {
+        }}
+        form {{
             background: #F5F3ED;
             padding: 40px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-        }
-        .form-group {
+        }}
+        .form-group {{
             margin-bottom: 32px;
-        }
-        label {
+        }}
+        label {{
             display: block;
             font-size: 11px;
             font-weight: 600;
@@ -144,8 +170,8 @@ async fn claim_page(
             letter-spacing: 1px;
             color: #666;
             margin-bottom: 12px;
-        }
-        input {
+        }}
+        input {{
             width: 100%;
             padding: 16px;
             background: #fff;
@@ -154,15 +180,15 @@ async fn claim_page(
             font-size: 14px;
             font-family: 'Courier New', monospace;
             transition: border-color 0.2s;
-        }
-        input:focus {
+        }}
+        input:focus {{
             outline: none;
             border-color: #1E3A5F;
-        }
-        input::placeholder {
+        }}
+        input::placeholder {{
             color: #999;
-        }
-        button {
+        }}
+        button {{
             width: 100%;
             padding: 20px;
             background: #B8915F;
@@ -175,19 +201,24 @@ async fn claim_page(
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-        }
-        button:hover {
+        }}
+        button:hover {{
             background: #1E3A5F;
             color: #fff;
-        }
+        }}
     </style>
 </head>
 <body>
     <div class="container">
-        <a href="/" class="back">Back to Dashboard</a>
+        <a href="/issuers" class="back">Back to Channels</a>
         <div class="header">
             <h1>Claim Card</h1>
             <p class="subtitle">Membership Verification</p>
+        </div>
+
+        <div class="channel-info">
+            <h2>{}</h2>
+            <p class="channel-id">{}</p>
         </div>
 
         <div class="info-box">
@@ -200,11 +231,7 @@ async fn claim_page(
             </ol>
         </div>
 
-        <form action="/cards/claim" method="POST">
-            <div class="form-group">
-                <label for="issuer_id">Issuer Channel ID</label>
-                <input type="text" name="issuer_id" id="issuer_id" required placeholder="00000000-0000-0000-0000-000000000000">
-            </div>
+        <form action="/channels/{}/claim" method="POST">
             <div class="form-group">
                 <label for="comment_link">Comment URL or ID</label>
                 <input type="text" name="comment_link" id="comment_link" required
@@ -215,21 +242,29 @@ async fn claim_page(
     </div>
 </body>
 </html>
-    "#;
+    "#,
+        issuer.channel_name,
+        issuer.channel_name,
+        issuer
+            .channel_handle
+            .as_deref()
+            .unwrap_or(&issuer.youtube_channel_id),
+        issuer_id
+    );
 
-    Ok(Html(html.to_string()))
+    Ok(Html(html))
 }
 
 #[derive(Deserialize)]
-struct ClaimCardForm {
-    issuer_id: Uuid,
+struct ClaimCardFormForChannel {
     comment_link: String,
 }
 
-async fn claim_card(
+async fn claim_card_for_channel(
     State(state): State<AppState>,
+    Path(issuer_id): Path<Uuid>,
     session: Session,
-    Form(form): Form<ClaimCardForm>,
+    Form(form): Form<ClaimCardFormForChannel>,
 ) -> Result<Response, CardsError> {
     let member = get_authenticated_member(&session)
         .await
@@ -275,7 +310,7 @@ async fn claim_card(
         &state.pool,
         &signing_key,
         card_issuer::IssueCardRequest {
-            issuer_id: form.issuer_id,
+            issuer_id,
             member_youtube_user_id: member_record.youtube_user_id,
             member_display_name: member_record.default_display_name,
             member_avatar_url: member_record.avatar_url,
@@ -715,7 +750,7 @@ async fn my_cards(
 </body>
 </html>"#,
         if cards.is_empty() {
-            r#"<div class="empty"><p>You don't have any cards yet.</p><a href="/cards/claim" class="button">Claim a Card</a></div>"#.to_string()
+            r#"<div class="empty"><p>You don't have any cards yet.</p><a href="/issuers" class="button">Browse Channels</a></div>"#.to_string()
         } else {
             format!(r#"<div class="cards">{}</div>"#, cards_html)
         }
@@ -726,8 +761,11 @@ async fn my_cards(
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/cards/claim", get(claim_page).post(claim_card))
         .route("/cards/my-cards", get(my_cards))
         .route("/cards/:id", get(show_card))
         .route("/cards/:id/qr", get(card_qr))
+        .route(
+            "/channels/:issuer_id/claim",
+            get(claim_page_for_channel).post(claim_card_for_channel),
+        )
 }

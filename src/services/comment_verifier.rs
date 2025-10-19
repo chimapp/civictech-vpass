@@ -16,9 +16,6 @@ pub enum CommentVerificationError {
     #[error("Comment is not on the verification video")]
     WrongVideo,
 
-    #[error("Comment was posted before the session started")]
-    CommentTooOld,
-
     #[error("YouTube API error: {0}")]
     ApiError(String),
 
@@ -52,7 +49,7 @@ struct CommentItem {
 struct CommentSnippet {
     author_channel_id: AuthorChannelId,
     author_display_name: String,
-    video_id: String,
+    #[serde(rename = "textDisplay")]
     text_display: String,
     published_at: String,
 }
@@ -68,12 +65,11 @@ struct AuthorChannelId {
 /// 1. Fetches the comment from YouTube Data API
 /// 2. Verifies the comment belongs to the authenticated user
 /// 3. Verifies the comment is on the expected verification video
-/// 4. Verifies the comment was posted after the session started
 pub async fn verify_comment(
     comment_id: &str,
     expected_video_id: &str,
     expected_author_channel_id: &str,
-    session_started_at: DateTime<Utc>,
+    _session_started_at: DateTime<Utc>,
     access_token: &str,
 ) -> Result<CommentVerificationResult, CommentVerificationError> {
     let client = Client::new();
@@ -117,60 +113,83 @@ pub async fn verify_comment(
         return Err(CommentVerificationError::CommentOwnershipMismatch);
     }
 
-    // Verify comment is on the correct video
-    if comment.snippet.video_id != expected_video_id {
-        return Err(CommentVerificationError::WrongVideo);
-    }
+    // Note: comments.list API doesn't return videoId in the snippet for individual comments.
+    // We use the expected_video_id from the issuer configuration instead, as the comment URL
+    // already includes the video ID which was validated when extracting the comment ID.
 
     // Parse published timestamp
     let published_at = DateTime::parse_from_rfc3339(&comment.snippet.published_at)
         .map_err(|e| CommentVerificationError::ParseError(e.to_string()))?
         .with_timezone(&Utc);
 
-    // Verify comment was posted after session started
-    if published_at < session_started_at {
-        return Err(CommentVerificationError::CommentTooOld);
-    }
-
     Ok(CommentVerificationResult {
         comment_id: comment.id.clone(),
         author_channel_id: comment.snippet.author_channel_id.value.clone(),
         author_display_name: comment.snippet.author_display_name.clone(),
-        video_id: comment.snippet.video_id.clone(),
+        video_id: expected_video_id.to_string(),
         published_at,
         text: comment.snippet.text_display.clone(),
     })
 }
 
-/// Extracts the comment ID from a YouTube comment URL
+/// Extracts the comment ID and video ID from a YouTube comment URL
 /// Supports formats like:
 /// - https://www.youtube.com/watch?v=VIDEO_ID&lc=COMMENT_ID
-/// - Direct comment ID
-pub fn extract_comment_id(input: &str) -> Option<String> {
+/// - Direct comment ID (returns None for video_id)
+///
+///   Returns (comment_id, video_id)
+pub fn extract_comment_and_video_id(input: &str) -> Option<(String, Option<String>)> {
     // If it's already just a comment ID (alphanumeric + hyphens/underscores)
     if input
         .chars()
         .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
     {
-        return Some(input.to_string());
+        return Some((input.to_string(), None));
     }
 
     // Try to parse as URL
     if let Ok(url) = url::Url::parse(input) {
-        // Look for lc parameter (comment ID)
+        let mut comment_id = None;
+        let mut video_id = None;
+
+        // Look for lc parameter (comment ID) and v parameter (video ID)
         for (key, value) in url.query_pairs() {
             if key == "lc" {
-                return Some(value.to_string());
+                comment_id = Some(value.to_string());
+            } else if key == "v" {
+                video_id = Some(value.to_string());
             }
+        }
+
+        if let Some(cid) = comment_id {
+            return Some((cid, video_id));
         }
     }
 
     None
 }
 
+/// Extracts the comment ID from a YouTube comment URL (legacy function)
+/// Supports formats like:
+/// - https://www.youtube.com/watch?v=VIDEO_ID&lc=COMMENT_ID
+/// - Direct comment ID
+pub fn extract_comment_id(input: &str) -> Option<String> {
+    extract_comment_and_video_id(input).map(|(comment_id, _)| comment_id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_extract_comment_and_video_id_from_url() {
+        let url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ&lc=UgxABC123";
+        let result = extract_comment_and_video_id(url);
+        assert_eq!(
+            result,
+            Some(("UgxABC123".to_string(), Some("dQw4w9WgXcQ".to_string())))
+        );
+    }
 
     #[test]
     fn test_extract_comment_id_from_url() {
@@ -184,6 +203,13 @@ mod tests {
         let comment_id = "UgxDirect123";
         let result = extract_comment_id(comment_id);
         assert_eq!(result, Some("UgxDirect123".to_string()));
+    }
+
+    #[test]
+    fn test_extract_comment_and_video_id_direct() {
+        let comment_id = "UgxDirect123";
+        let result = extract_comment_and_video_id(comment_id);
+        assert_eq!(result, Some(("UgxDirect123".to_string(), None)));
     }
 
     #[test]

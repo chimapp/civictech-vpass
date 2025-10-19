@@ -81,11 +81,28 @@ pub async fn issue_card(
         "Loaded issuer"
     );
 
-    // 2. Extract comment ID from link
-    let comment_id = comment_verifier::extract_comment_id(&request.comment_link_or_id)
-        .ok_or(CardIssuanceError::InvalidCommentId)?;
+    // 2. Extract comment ID and video ID from link
+    let (comment_id, url_video_id) =
+        comment_verifier::extract_comment_and_video_id(&request.comment_link_or_id)
+            .ok_or(CardIssuanceError::InvalidCommentId)?;
 
-    tracing::debug!(comment_id = %comment_id, "Extracted comment ID");
+    // If the URL contains a video ID, verify it matches the issuer's verification video
+    if let Some(ref vid) = url_video_id {
+        if vid != &issuer.verification_video_id {
+            tracing::warn!(
+                url_video_id = %vid,
+                expected_video_id = %issuer.verification_video_id,
+                "Video ID from URL doesn't match issuer's verification video"
+            );
+            return Err(CardIssuanceError::InvalidCommentId);
+        }
+    }
+
+    tracing::debug!(
+        comment_id = %comment_id,
+        video_id = ?url_video_id,
+        "Extracted comment and video ID from URL"
+    );
 
     // 3. Verify the comment
     let verification_result = comment_verifier::verify_comment(
