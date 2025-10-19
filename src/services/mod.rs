@@ -7,4 +7,5 @@ pub mod membership_checker;
 pub mod oauth;
 pub mod qr_generator;
 pub mod signature;
+pub mod wallet_qr;
 pub mod youtube_channel;

@@ -14,6 +14,10 @@ pub struct Config {
     // YouTube Data API (for channel info lookup)
     pub youtube_api_key: Option<String>,
 
+    // Taiwan Digital Wallet API
+    pub wallet_api_url: Option<String>,
+    pub wallet_access_token: Option<Secret<String>>,
+
     // Security
     pub session_secret: Secret<String>,
 }
@@ -36,6 +40,12 @@ impl Config {
             youtube_client_secret: Secret::new(config.get("youtube_client_secret")?),
 
             youtube_api_key: config.get("youtube_api_key").ok(),
+
+            wallet_api_url: config.get("wallet_api_url").ok(),
+            wallet_access_token: config
+                .get::<String>("wallet_access_token")
+                .ok()
+                .map(Secret::new),
 
             session_secret: Secret::new(config.get("session_secret")?),
         })

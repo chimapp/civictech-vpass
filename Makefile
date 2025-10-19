@@ -22,3 +22,7 @@ test:
 .PHONY: coverage
 coverage:
 	cargo tarpaulin --out Html
+
+.PHONY: psql
+psql:
+	psql "postgresql://postgres:password@localhost:5432/vpass_dev"

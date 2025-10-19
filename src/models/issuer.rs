@@ -12,6 +12,7 @@ pub struct CardIssuer {
     pub channel_name: String,
     pub verification_video_id: String,
     pub default_membership_label: String,
+    pub vc_uid: Option<String>, // Taiwan Digital Wallet VC UID
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -24,6 +25,7 @@ pub struct CreateIssuerData {
     pub channel_name: String,
     pub verification_video_id: String,
     pub default_membership_label: String,
+    pub vc_uid: Option<String>,
 }
 
 impl CardIssuer {
@@ -33,9 +35,9 @@ impl CardIssuer {
             r#"
             INSERT INTO card_issuers (
                 platform, youtube_channel_id, channel_handle, channel_name,
-                verification_video_id, default_membership_label
+                verification_video_id, default_membership_label, vc_uid
             )
-            VALUES ('youtube', $1, $2, $3, $4, $5)
+            VALUES ('youtube', $1, $2, $3, $4, $5, $6)
             RETURNING *
             "#,
         )
@@ -44,6 +46,7 @@ impl CardIssuer {
         .bind(&data.channel_name)
         .bind(&data.verification_video_id)
         .bind(&data.default_membership_label)
+        .bind(&data.vc_uid)
         .fetch_one(pool)
         .await?;
 
@@ -145,6 +148,7 @@ impl CardIssuer {
         channel_name: Option<String>,
         channel_handle: Option<String>,
         default_membership_label: Option<String>,
+        vc_uid: Option<String>,
     ) -> Result<(), sqlx::Error> {
         sqlx::query(
             r#"
@@ -153,6 +157,7 @@ impl CardIssuer {
                 channel_name = COALESCE($2, channel_name),
                 channel_handle = COALESCE($3, channel_handle),
                 default_membership_label = COALESCE($4, default_membership_label),
+                vc_uid = COALESCE($5, vc_uid),
                 updated_at = NOW()
             WHERE id = $1
             "#,
@@ -161,6 +166,7 @@ impl CardIssuer {
         .bind(channel_name)
         .bind(channel_handle)
         .bind(default_membership_label)
+        .bind(vc_uid)
         .execute(pool)
         .await?;
 

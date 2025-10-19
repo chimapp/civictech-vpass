@@ -1,6 +1,7 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
+    middleware,
     response::{Html, IntoResponse, Response},
     routing::{get, post},
     Form, Json, Router,
@@ -8,6 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::api::middleware::auth::require_auth;
 use crate::api::middleware::session::AppState;
 use crate::models::issuer::{CardIssuer, CreateIssuerData};
 use crate::services::youtube_channel;
@@ -70,6 +72,10 @@ async fn list_issuers(State(state): State<AppState>) -> Result<Html<String>, Iss
                             <span class="label">Default Label</span>
                             <span class="value">{}</span>
                         </div>
+                        <div class="info-item">
+                            <span class="label">Wallet VC UID</span>
+                            <span class="value">{}</span>
+                        </div>
                     </div>
                     <div class="actions">
                         <a href="/channels/{}/claim" class="btn btn-primary">Claim Card</a>
@@ -94,6 +100,7 @@ async fn list_issuers(State(state): State<AppState>) -> Result<Html<String>, Iss
                 issuer.channel_handle.as_deref().unwrap_or("N/A"),
                 issuer.verification_video_id,
                 issuer.default_membership_label,
+                issuer.vc_uid.as_deref().unwrap_or("Not configured"),
                 issuer.id,
                 issuer.id,
                 issuer.id,
@@ -589,6 +596,7 @@ async fn create_issuer(
             channel_name: form.channel_name.trim().to_string(),
             verification_video_id: form.verification_video_id.trim().to_string(),
             default_membership_label: form.default_membership_label.trim().to_string(),
+            vc_uid: None, // Can be set later via update_channel_info
         },
     )
     .await
@@ -753,6 +761,12 @@ async fn edit_issuer_form(
                 <input type="text" name="default_membership_label" id="default_membership_label" value="{}">
             </div>
 
+            <div class="form-group">
+                <label for="vc_uid">Taiwan Digital Wallet VC UID</label>
+                <input type="text" name="vc_uid" id="vc_uid" value="{}" placeholder="e.g., 0019930579_hoshiyomi">
+                <p class="help-text">Optional: VC UID for Taiwan Digital Wallet QR code generation</p>
+            </div>
+
             <button type="submit">Update Issuer</button>
         </form>
     </div>
@@ -763,7 +777,8 @@ async fn edit_issuer_form(
         issuer.channel_name,
         issuer.channel_handle.as_deref().unwrap_or(""),
         issuer.verification_video_id,
-        issuer.default_membership_label
+        issuer.default_membership_label,
+        issuer.vc_uid.as_deref().unwrap_or("")
     );
 
     Ok(Html(html))
@@ -775,6 +790,7 @@ struct UpdateIssuerForm {
     channel_handle: Option<String>,
     verification_video_id: Option<String>,
     default_membership_label: Option<String>,
+    vc_uid: Option<String>,
 }
 
 /// Update an existing issuer
@@ -795,6 +811,7 @@ async fn update_issuer(
     let default_membership_label = form
         .default_membership_label
         .filter(|s| !s.trim().is_empty());
+    let vc_uid = form.vc_uid.filter(|s| !s.trim().is_empty());
 
     CardIssuer::update_channel_info(
         &state.pool,
@@ -802,6 +819,7 @@ async fn update_issuer(
         channel_name,
         channel_handle,
         default_membership_label,
+        vc_uid,
     )
     .await
     .map_err(IssuersError::DatabaseError)?;
@@ -886,4 +904,5 @@ pub fn router() -> Router<AppState> {
         .route("/issuers/:id/edit", get(edit_issuer_form))
         .route("/issuers/:id", post(update_issuer))
         .route("/issuers/:id/toggle", post(toggle_issuer_status))
+        .layer(middleware::from_fn(require_auth))
 }

@@ -6,6 +6,7 @@ use crate::models::{
     card::{CreateCardData, MembershipCard},
     issuer::CardIssuer,
     member::{CreateMemberData, Member},
+    wallet_qr_code::{CreateWalletQrCodeData, WalletQrCode},
 };
 use crate::services::{comment_verifier, qr_generator};
 
@@ -17,8 +18,8 @@ pub enum CardIssuanceError {
     #[error("Comment verification failed: {0}")]
     CommentVerification(#[from] comment_verifier::CommentVerificationError),
 
-    #[error("QR generation failed: {0}")]
-    QrGeneration(#[from] qr_generator::QrGenerationError),
+    #[error("Wallet QR generation failed: {0}")]
+    WalletQrGeneration(#[from] crate::services::wallet_qr::WalletQrError),
 
     #[error("Issuer not found")]
     IssuerNotFound,
@@ -28,6 +29,12 @@ pub enum CardIssuanceError {
 
     #[error("Invalid comment ID format")]
     InvalidCommentId,
+
+    #[error("Issuer not configured for Taiwan Digital Wallet (missing vc_uid)")]
+    MissingVcUid,
+
+    #[error("Taiwan Digital Wallet API not configured")]
+    WalletApiNotConfigured,
 }
 
 /// Request to issue a new membership card
@@ -45,7 +52,7 @@ pub struct IssueCardRequest {
 pub struct IssueCardResult {
     pub card: MembershipCard,
     pub member: Member,
-    pub qr_svg: String,
+    pub wallet_qr: WalletQrCode,
 }
 
 /// Issues a new membership card
@@ -57,11 +64,13 @@ pub struct IssueCardResult {
 /// 4. Creates or updates member record
 /// 5. Generates QR payload and signature
 /// 6. Stores the card in the database
-/// 7. Returns the card with QR code
-#[tracing::instrument(skip(pool, signing_key, request), fields(issuer_id = %request.issuer_id))]
+/// 7. Optionally generates Taiwan Digital Wallet QR code
+/// 8. Returns the card with QR code
+#[tracing::instrument(skip(pool, signing_key, wallet_api_config, request), fields(issuer_id = %request.issuer_id))]
 pub async fn issue_card(
     pool: &PgPool,
     signing_key: &[u8],
+    wallet_api_config: Option<(&str, &str)>, // (api_url, access_token)
     request: IssueCardRequest,
 ) -> Result<IssueCardResult, CardIssuanceError> {
     tracing::info!("Starting card issuance process");
@@ -189,7 +198,44 @@ pub async fn issue_card(
         },
     });
 
-    // 9. Store the card
+    // 9. Validate wallet API configuration
+    let (api_url, access_token) =
+        wallet_api_config.ok_or(CardIssuanceError::WalletApiNotConfigured)?;
+
+    // 10. Validate issuer has vc_uid configured
+    let vc_uid = issuer
+        .vc_uid
+        .as_ref()
+        .ok_or(CardIssuanceError::MissingVcUid)?;
+
+    // 11. Generate Taiwan Digital Wallet QR code
+    tracing::debug!("Generating Taiwan Digital Wallet QR code");
+
+    // Sanitize display name: Taiwan Digital Wallet only allows Chinese, English, numbers, and underscore
+    let sanitized_name = verification_result
+        .author_display_name
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '_' || (*c >= '\u{4e00}' && *c <= '\u{9fff}'))
+        .collect::<String>();
+
+    let display_name = if sanitized_name.is_empty() {
+        "Member".to_string()
+    } else {
+        sanitized_name
+    };
+
+    let fields = vec![crate::services::wallet_qr::WalletQrField {
+        ename: "name".to_string(),
+        content: display_name,
+    }];
+
+    let wallet_qr_response =
+        crate::services::wallet_qr::generate_wallet_qr(api_url, access_token, vc_uid, fields)
+            .await?;
+
+    tracing::info!("Wallet QR code generated successfully");
+
+    // 12. Store the card
     let card = MembershipCard::create(
         pool,
         CreateCardData {
@@ -208,12 +254,27 @@ pub async fn issue_card(
 
     tracing::info!(card_id = %card.id, "Card created successfully");
 
-    // 10. Generate QR code SVG
-    let qr_svg = qr_generator::generate_qr_svg(&qr_payload, &qr_signature)?;
+    // 13. Create wallet QR code record
+    let wallet_qr = WalletQrCode::create(
+        pool,
+        CreateWalletQrCodeData {
+            card_id: card.id,
+            transaction_id: wallet_qr_response.transaction_id,
+            qr_code: wallet_qr_response.qr_code,
+            deep_link: Some(wallet_qr_response.deep_link),
+        },
+    )
+    .await?;
+
+    tracing::info!(
+        wallet_qr_id = %wallet_qr.id,
+        transaction_id = %wallet_qr.transaction_id,
+        "Wallet QR code record created"
+    );
 
     Ok(IssueCardResult {
         card,
         member,
-        qr_svg,
+        wallet_qr,
     })
 }

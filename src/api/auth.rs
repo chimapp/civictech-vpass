@@ -11,7 +11,7 @@ use tower_sessions::Session;
 
 use crate::api::middleware::session::{
     AppState, SESSION_KEY_CSRF_TOKEN, SESSION_KEY_MEMBER_ID, SESSION_KEY_PKCE_VERIFIER,
-    SESSION_KEY_SESSION_STARTED_AT,
+    SESSION_KEY_RETURN_URL, SESSION_KEY_SESSION_STARTED_AT,
 };
 use crate::models::{
     member::{CreateMemberData, Member},
@@ -174,8 +174,23 @@ async fn youtube_callback(
 
     tracing::info!(member_id = %member.id, "Member authenticated successfully");
 
-    // Redirect to issuers page
-    Ok(Redirect::to("/issuers"))
+    // Get the return URL from session, or default to /issuers
+    let return_url: Option<String> = session
+        .get(SESSION_KEY_RETURN_URL)
+        .await
+        .map_err(|e| AuthError::SessionError(e.to_string()))?;
+
+    // Clear the return URL from session
+    if return_url.is_some() {
+        let _ = session.remove::<String>(SESSION_KEY_RETURN_URL).await;
+    }
+
+    let redirect_to = return_url.unwrap_or_else(|| "/issuers".to_string());
+
+    tracing::info!(redirect_to = %redirect_to, "Redirecting after successful authentication");
+
+    // Redirect to the stored URL or default to issuers page
+    Ok(Redirect::to(&redirect_to))
 }
 
 /// Logs out the user

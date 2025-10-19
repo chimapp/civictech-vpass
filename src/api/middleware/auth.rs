@@ -2,28 +2,28 @@ use axum::{
     extract::Request,
     http::StatusCode,
     middleware::Next,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 use tower_sessions::Session;
 use uuid::Uuid;
 
-use super::session::SESSION_KEY_MEMBER_ID;
+use super::session::{SESSION_KEY_MEMBER_ID, SESSION_KEY_RETURN_URL};
 
 /// Authentication error responses
 #[derive(Debug)]
 pub enum AuthError {
-    Unauthorized,
+    Unauthorized(String), // Store the requested path
     SessionError,
 }
 
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         match self {
-            AuthError::Unauthorized => (
-                StatusCode::UNAUTHORIZED,
-                "Authentication required. Please log in.",
-            )
-                .into_response(),
+            AuthError::Unauthorized(_) => {
+                // Redirect to login page instead of showing error message
+                // The return URL is already stored in the session by the middleware
+                Redirect::to("/auth/youtube/login").into_response()
+            }
             AuthError::SessionError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Session error occurred.").into_response()
             }
@@ -44,7 +44,21 @@ pub async fn require_auth(
         .map_err(|_| AuthError::SessionError)?;
 
     if member_id.is_none() {
-        return Err(AuthError::Unauthorized);
+        // Store the requested URL for redirect after login
+        let requested_path = request
+            .uri()
+            .path_and_query()
+            .map(|pq| pq.as_str())
+            .unwrap_or("/");
+
+        // Only store if it's not already a login/logout/callback URL
+        if !requested_path.starts_with("/auth/") {
+            let _ = session
+                .insert(SESSION_KEY_RETURN_URL, requested_path.to_string())
+                .await;
+        }
+
+        return Err(AuthError::Unauthorized(requested_path.to_string()));
     }
 
     Ok(next.run(request).await)
@@ -62,7 +76,7 @@ pub async fn get_authenticated_member(session: &Session) -> Result<Authenticated
         .get(SESSION_KEY_MEMBER_ID)
         .await
         .map_err(|_| AuthError::SessionError)?
-        .ok_or(AuthError::Unauthorized)?;
+        .ok_or(AuthError::Unauthorized(String::new()))?;
 
     Ok(AuthenticatedMember { member_id })
 }

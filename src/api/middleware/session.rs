@@ -8,6 +8,7 @@ pub const SESSION_KEY_MEMBER_ID: &str = "member_id";
 pub const SESSION_KEY_CSRF_TOKEN: &str = "csrf_token";
 pub const SESSION_KEY_PKCE_VERIFIER: &str = "pkce_verifier";
 pub const SESSION_KEY_SESSION_STARTED_AT: &str = "session_started_at";
+pub const SESSION_KEY_RETURN_URL: &str = "return_url";
 
 /// Creates a session layer for Axum
 pub async fn create_session_layer(

@@ -1,6 +1,7 @@
 use axum::{
     extract::{Path, State},
     http::{header, StatusCode},
+    middleware,
     response::{Html, IntoResponse, Response},
     routing::get,
     Form, Router,
@@ -12,11 +13,11 @@ use tower_sessions::Session;
 use uuid::Uuid;
 
 use crate::api::middleware::{
-    auth::{get_authenticated_member, AuthError},
+    auth::{get_authenticated_member, require_auth, AuthError},
     session::{AppState, SESSION_KEY_SESSION_STARTED_AT},
 };
 use crate::models::{card::MembershipCard, issuer::CardIssuer, oauth_session::OAuthSession};
-use crate::services::{card_issuer, qr_generator};
+use crate::services::card_issuer;
 
 #[derive(Debug)]
 pub enum CardsError {
@@ -273,12 +274,55 @@ async fn claim_card_for_channel(
     let member_record = crate::models::member::Member::find_by_id(&state.pool, member.member_id)
         .await
         .map_err(CardsError::DatabaseError)?
-        .ok_or(CardsError::AuthError(AuthError::Unauthorized))?;
+        .ok_or(CardsError::AuthError(
+            AuthError::Unauthorized(String::new()),
+        ))?;
 
-    let oauth_session = OAuthSession::find_by_member_id(&state.pool, member.member_id)
+    let mut oauth_session = OAuthSession::find_by_member_id(&state.pool, member.member_id)
         .await
         .map_err(CardsError::DatabaseError)?
-        .ok_or(CardsError::AuthError(AuthError::Unauthorized))?;
+        .ok_or(CardsError::AuthError(
+            AuthError::Unauthorized(String::new()),
+        ))?;
+
+    // Check if token is expired and refresh if needed
+    if oauth_session.is_expired() {
+        tracing::info!("Access token expired, attempting to refresh");
+
+        let refresh_token = oauth_session
+            .refresh_token
+            .as_ref()
+            .and_then(|t| String::from_utf8(t.clone()).ok())
+            .ok_or(CardsError::SessionError(
+                "No refresh token available".to_string(),
+            ))?;
+
+        let token_data = crate::services::oauth::youtube::refresh_access_token(
+            &refresh_token,
+            &state.config.youtube_client_id,
+            &state.config.youtube_client_secret,
+            &format!("{}/auth/youtube/callback", state.config.base_url),
+        )
+        .await
+        .map_err(|e| CardsError::SessionError(format!("Token refresh failed: {}", e)))?;
+
+        // Update the session with new tokens
+        OAuthSession::update_tokens(
+            &state.pool,
+            oauth_session.id,
+            token_data.access_token.as_bytes().to_vec(),
+            token_data.refresh_token.map(|t| t.as_bytes().to_vec()),
+            token_data.expires_at,
+        )
+        .await
+        .map_err(CardsError::DatabaseError)?;
+
+        tracing::info!("Access token refreshed successfully");
+
+        // Update our local copy
+        oauth_session.access_token = token_data.access_token.as_bytes().to_vec();
+        oauth_session.token_expires_at = token_data.expires_at;
+    }
 
     let access_token = String::from_utf8(oauth_session.access_token)
         .map_err(|_| CardsError::SessionError("Invalid access token encoding".to_string()))?;
@@ -306,9 +350,19 @@ async fn claim_card_for_channel(
         key
     };
 
+    // Prepare wallet API configuration if available
+    let wallet_api_config = state.config.wallet_api_url.as_ref().and_then(|url| {
+        state
+            .config
+            .wallet_access_token
+            .as_ref()
+            .map(|token| (url.as_str(), token.expose_secret().as_str()))
+    });
+
     let result = card_issuer::issue_card(
         &state.pool,
         &signing_key,
+        wallet_api_config,
         card_issuer::IssueCardRequest {
             issuer_id,
             member_youtube_user_id: member_record.youtube_user_id,
@@ -344,6 +398,12 @@ async fn show_card(
     if card.member_id != member.member_id {
         return Err(CardsError::NotFound);
     }
+
+    // Load the active wallet QR code for this card
+    let wallet_qr =
+        crate::models::wallet_qr_code::WalletQrCode::find_active_by_card_id(&state.pool, card.id)
+            .await
+            .map_err(CardsError::DatabaseError)?;
 
     let html = format!(
         r#"<!DOCTYPE html>
@@ -491,10 +551,10 @@ async fn show_card(
         <div class="card-display">
             <div class="membership-level">{}</div>
             <div class="qr-code">
-                <img src="/cards/{}/qr" alt="Membership QR Code" />
+                <img src="{}" alt="Taiwan Digital Wallet QR Code" />
             </div>
             <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px;">
-                Scan to verify
+                Scan with Taiwan Digital Wallet
             </div>
         </div>
 
@@ -514,18 +574,24 @@ async fn show_card(
         </div>
 
         <div class="actions">
-            <a href="/cards/{}/qr" download="vpass-card.svg" class="button">Download QR Code</a>
+            <a href="{}" download="wallet-qr-code.png" class="button">Download QR Code</a>
             <a href="/cards/my-cards" class="button secondary">View All Cards</a>
         </div>
     </div>
 </body>
 </html>"#,
         card.membership_level_label,
-        card.id,
+        wallet_qr
+            .as_ref()
+            .map(|qr| qr.qr_code.as_str())
+            .unwrap_or("Not available"),
         card.membership_confirmed_at.format("%Y-%m-%d %H:%M UTC"),
         card.issued_at.format("%Y-%m-%d %H:%M UTC"),
         card.id,
-        card.id
+        wallet_qr
+            .as_ref()
+            .map(|qr| qr.qr_code.as_str())
+            .unwrap_or("Not available")
     );
 
     Ok(Html(html))
@@ -549,20 +615,20 @@ async fn card_qr(
         return Err(CardsError::NotFound);
     }
 
-    let qr_payload: qr_generator::MembershipCardPayload = serde_json::from_value(card.qr_payload)
-        .map_err(|e| {
-        CardsError::IssuanceError(card_issuer::CardIssuanceError::QrGeneration(
-            qr_generator::QrGenerationError::SerializationError(e),
-        ))
-    })?;
+    // Load the active wallet QR code for this card
+    let wallet_qr =
+        crate::models::wallet_qr_code::WalletQrCode::find_active_by_card_id(&state.pool, card.id)
+            .await
+            .map_err(CardsError::DatabaseError)?;
 
-    let qr_svg = qr_generator::generate_qr_svg(&qr_payload, &card.qr_signature)
-        .map_err(|e| CardsError::IssuanceError(card_issuer::CardIssuanceError::QrGeneration(e)))?;
+    let wallet_qr_data = wallet_qr
+        .map(|qr| qr.qr_code)
+        .unwrap_or_else(|| "Not available".to_string());
 
     Ok((
         StatusCode::OK,
-        [(header::CONTENT_TYPE, "image/svg+xml")],
-        qr_svg,
+        [(header::CONTENT_TYPE, "text/plain")],
+        wallet_qr_data,
     )
         .into_response())
 }
@@ -768,4 +834,5 @@ pub fn router() -> Router<AppState> {
             "/channels/:issuer_id/claim",
             get(claim_page_for_channel).post(claim_card_for_channel),
         )
+        .layer(middleware::from_fn(require_auth))
 }

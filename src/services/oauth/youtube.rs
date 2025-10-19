@@ -75,6 +75,8 @@ pub fn build_auth_url(
         .authorize_url(CsrfToken::new_random)
         .add_scope(Scope::new(YOUTUBE_FORCE_SSL_SCOPE.to_string()))
         .set_pkce_challenge(pkce_challenge)
+        .add_extra_param("access_type", "offline")
+        .add_extra_param("prompt", "consent")
         .url();
 
     Ok((
