@@ -42,6 +42,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Configuration
 config = "0.14"
+dotenvy = "0.15"
 secrecy = { version = "0.8", features = ["serde"] }
 
 # Encryption
@@ -54,6 +55,9 @@ anyhow = "1.0"
 # Utilities
 uuid = { version = "1.6", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+hex = "0.4"
+url = "2.5"
+time = "0.3"
 
 [dev-dependencies]
 # Testing

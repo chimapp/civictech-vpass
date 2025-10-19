@@ -25,10 +25,32 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Result<Self, config::ConfigError> {
-        // TODO: T011 - Implement full configuration loading
-        // - Load from .env file
-        // - Validate all required fields are present
-        // - Provide helpful error messages for missing config
-        todo!("Implement configuration loading from environment")
+        // Load .env file if it exists (for local development)
+        let _ = dotenvy::dotenv();
+
+        let config = config::Config::builder()
+            .add_source(config::Environment::default().separator("__"))
+            .build()?;
+
+        Ok(Self {
+            database_url: config.get("database_url")?,
+            base_url: config.get("base_url")?,
+            port: config.get("port")?,
+
+            youtube_client_id: config.get("youtube_client_id")?,
+            youtube_client_secret: Secret::new(config.get("youtube_client_secret")?),
+
+            twitch_client_id: config.get("twitch_client_id").unwrap_or_default(),
+            twitch_client_secret: Secret::new(
+                config.get("twitch_client_secret").unwrap_or_default(),
+            ),
+
+            session_secret: Secret::new(config.get("session_secret")?),
+            encryption_key: Secret::new(config.get("encryption_key")?),
+
+            subscription_check_schedule: config
+                .get("subscription_check_schedule")
+                .unwrap_or_else(|_| "0 0 */6 * * *".to_string()), // Every 6 hours by default
+        })
     }
 }

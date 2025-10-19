@@ -1,6 +1,12 @@
 use axum::{routing::get, Router};
+use secrecy::ExposeSecret;
 use std::net::SocketAddr;
+use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use vpass::api::middleware::session::{create_session_layer, AppState};
+use vpass::config::Config;
+use vpass::db;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -15,26 +21,43 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("Starting VPass server...");
 
-    // TODO: T011 - Load configuration from environment
-    // let config = vpass::config::Config::from_env()?;
+    // Load configuration
+    let config = Config::from_env()?;
+    tracing::info!("Configuration loaded successfully");
 
-    // TODO: T012 - Create database pool
-    // let pool = vpass::db::create_pool(&config.database_url).await?;
+    // Create database pool
+    let pool = db::create_pool(&config.database_url).await?;
+    tracing::info!("Database pool created");
 
-    // TODO: T009 - Run database migrations
-    // vpass::db::run_migrations(&pool).await?;
+    // Run migrations
+    db::run_migrations(&pool).await?;
+    tracing::info!("Database migrations completed");
 
-    // TODO: T015 - Build Axum application with router
+    // Create session layer
+    let session_secret = config.session_secret.expose_secret().as_bytes();
+    let session_layer = create_session_layer(pool.clone(), session_secret).await?;
+    tracing::info!("Session layer initialized");
+
+    // Build application state
+    let state = AppState {
+        pool: pool.clone(),
+        config: config.clone(),
+    };
+
+    // Build router
     let app = Router::new()
-        .route("/", get(|| async { "VPass API - Coming Soon" }))
-        .route("/health", get(|| async { "OK" }));
+        .route(
+            "/",
+            get(|| async { "VPass - YouTube Membership Verification" }),
+        )
+        .route("/health", get(|| async { "OK" }))
+        .merge(vpass::api::auth::router())
+        .merge(vpass::api::cards::router())
+        .layer(session_layer)
+        .layer(TraceLayer::new_for_http())
+        .with_state(state);
 
-    // TODO: T016 - Add session middleware
-    // TODO: T017 - Add authentication middleware
-    // TODO: T041 - Serve static files from web/static
-    // TODO: T053 - Setup cron scheduler
-
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], config.port));
     tracing::info!("Listening on {}", addr);
 
     // Start server
@@ -52,16 +75,3 @@ async fn shutdown_signal() {
         .expect("failed to install CTRL+C signal handler");
     tracing::info!("Shutdown signal received, cleaning up...");
 }
-
-// TODO: T015 - Implement full router setup with all endpoints
-// - /auth/{platform}/login
-// - /auth/{platform}/callback
-// - /auth/logout
-// - /auth/session
-// - /cards/claim
-// - /cards/{card_id}
-// - /cards/my-cards
-// - /cards/{card_id}/qr
-// - /verify/scan
-// - /verify/history
-// - /issuers

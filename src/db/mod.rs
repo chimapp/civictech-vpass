@@ -16,8 +16,9 @@ pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {
         .await
 }
 
-pub async fn run_migrations(_pool: &PgPool) -> Result<(), sqlx::Error> {
-    // TODO: T009 - Hook up SQLx migrations
-    // sqlx::migrate!("./migrations").run(pool).await
-    todo!("Implement migration runner")
+pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx::migrate!("./migrations")
+        .run(pool)
+        .await
+        .map_err(|e| sqlx::Error::Migrate(Box::new(e)))
 }
