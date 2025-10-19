@@ -7,8 +7,8 @@ use uuid::Uuid;
 pub struct OAuthSession {
     pub id: Uuid,
     pub member_id: Uuid,
-    pub access_token: Vec<u8>,          // BYTEA - encrypted
-    pub refresh_token: Option<Vec<u8>>, // BYTEA - encrypted
+    pub access_token: Vec<u8>,          // BYTEA - plaintext (use database encryption at rest)
+    pub refresh_token: Option<Vec<u8>>, // BYTEA - plaintext (use database encryption at rest)
     pub token_scope: String,
     pub token_expires_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
@@ -25,7 +25,9 @@ pub struct CreateSessionData {
 }
 
 impl OAuthSession {
-    /// Creates a new OAuth session with encrypted tokens
+    /// Creates a new OAuth session with plaintext tokens
+    /// Note: Tokens are stored as plaintext in the database.
+    /// For production, enable PostgreSQL encryption at rest (e.g., TDE or encrypted partitions).
     pub async fn create(pool: &PgPool, data: CreateSessionData) -> Result<Self, sqlx::Error> {
         let session = sqlx::query_as::<_, Self>(
             r#"

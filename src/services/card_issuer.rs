@@ -7,7 +7,7 @@ use crate::models::{
     issuer::CardIssuer,
     member::{CreateMemberData, Member},
 };
-use crate::services::{comment_verifier, encryption, qr_generator};
+use crate::services::{comment_verifier, qr_generator};
 
 #[derive(thiserror::Error, Debug)]
 pub enum CardIssuanceError {
@@ -19,9 +19,6 @@ pub enum CardIssuanceError {
 
     #[error("QR generation failed: {0}")]
     QrGeneration(#[from] qr_generator::QrGenerationError),
-
-    #[error("Encryption error: {0}")]
-    EncryptionError(#[from] encryption::EncryptionError),
 
     #[error("Issuer not found")]
     IssuerNotFound,

@@ -46,10 +46,6 @@ async fn main() -> anyhow::Result<()> {
 
     // Build router
     let app = Router::new()
-        .route(
-            "/",
-            get(|| async { "VPass - YouTube Membership Verification" }),
-        )
         .route("/health", get(|| async { "OK" }))
         .merge(vpass::api::auth::router())
         .merge(vpass::api::cards::router())
