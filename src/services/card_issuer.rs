@@ -131,16 +131,24 @@ pub async fn issue_card(
 
     let qr_payload = qr_generator::MembershipCardPayload::new(
         card_id,
-        issuer.id,
-        issuer.channel_name.clone(),
-        issuer.youtube_channel_id.clone(),
-        issuer.channel_handle.clone(),
-        verification_result.author_display_name.clone(),
-        issuer.default_membership_label.clone(),
-        verification_result.published_at,
-        now,
-        verification_result.video_id.clone(),
-        verification_result.comment_id.clone(),
+        qr_generator::IssuerInfo {
+            id: issuer.id.to_string(),
+            name: issuer.channel_name.clone(),
+            channel_id: issuer.youtube_channel_id.clone(),
+            handle: issuer.channel_handle.clone(),
+        },
+        qr_generator::MemberInfo {
+            display_name: verification_result.author_display_name.clone(),
+        },
+        qr_generator::MembershipInfo {
+            level: issuer.default_membership_label.clone(),
+            confirmed_at: verification_result.published_at,
+            issued_at: now,
+        },
+        qr_generator::VerificationInfo {
+            video_id: verification_result.video_id.clone(),
+            comment_id: verification_result.comment_id.clone(),
+        },
     );
 
     // 7. Sign the payload

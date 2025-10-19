@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub struct OAuthSession {
     pub id: Uuid,
     pub member_id: Uuid,
-    pub access_token: Vec<u8>,          // BYTEA - plaintext (use database encryption at rest)
+    pub access_token: Vec<u8>, // BYTEA - plaintext (use database encryption at rest)
     pub refresh_token: Option<Vec<u8>>, // BYTEA - plaintext (use database encryption at rest)
     pub token_scope: String,
     pub token_expires_at: DateTime<Utc>,

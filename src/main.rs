@@ -49,6 +49,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/health", get(|| async { "OK" }))
         .merge(vpass::api::auth::router())
         .merge(vpass::api::cards::router())
+        .merge(vpass::api::issuers::router())
         .layer(session_layer)
         .layer(TraceLayer::new_for_http())
         .with_state(state);

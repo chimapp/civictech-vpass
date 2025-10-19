@@ -11,6 +11,9 @@ pub struct Config {
     pub youtube_client_id: String,
     pub youtube_client_secret: Secret<String>,
 
+    // YouTube Data API (for channel info lookup)
+    pub youtube_api_key: Option<String>,
+
     // Security
     pub session_secret: Secret<String>,
 }
@@ -31,6 +34,8 @@ impl Config {
 
             youtube_client_id: config.get("youtube_client_id")?,
             youtube_client_secret: Secret::new(config.get("youtube_client_secret")?),
+
+            youtube_api_key: config.get("youtube_api_key").ok(),
 
             session_secret: Secret::new(config.get("session_secret")?),
         })

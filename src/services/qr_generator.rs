@@ -73,37 +73,17 @@ impl MembershipCardPayload {
     /// Creates a new payload from card components
     pub fn new(
         card_id: Uuid,
-        issuer_id: Uuid,
-        issuer_name: String,
-        issuer_channel_id: String,
-        issuer_handle: Option<String>,
-        member_display_name: String,
-        membership_level: String,
-        membership_confirmed_at: DateTime<Utc>,
-        issued_at: DateTime<Utc>,
-        verification_video_id: String,
-        verification_comment_id: String,
+        issuer: IssuerInfo,
+        member: MemberInfo,
+        membership: MembershipInfo,
+        verification: VerificationInfo,
     ) -> Self {
         Self {
             card_id: card_id.to_string(),
-            issuer: IssuerInfo {
-                id: issuer_id.to_string(),
-                name: issuer_name,
-                channel_id: issuer_channel_id,
-                handle: issuer_handle,
-            },
-            member: MemberInfo {
-                display_name: member_display_name,
-            },
-            membership: MembershipInfo {
-                level: membership_level,
-                confirmed_at: membership_confirmed_at,
-                issued_at,
-            },
-            verification: VerificationInfo {
-                video_id: verification_video_id,
-                comment_id: verification_comment_id,
-            },
+            issuer,
+            member,
+            membership,
+            verification,
             signature: None,
         }
     }
@@ -201,16 +181,24 @@ mod tests {
     fn test_payload_creation() {
         let payload = MembershipCardPayload::new(
             Uuid::new_v4(),
-            Uuid::new_v4(),
-            "Test Channel".to_string(),
-            "UC123456".to_string(),
-            Some("@testchannel".to_string()),
-            "Test Member".to_string(),
-            "Channel Member".to_string(),
-            Utc::now(),
-            Utc::now(),
-            "video123".to_string(),
-            "comment123".to_string(),
+            IssuerInfo {
+                id: Uuid::new_v4().to_string(),
+                name: "Test Channel".to_string(),
+                channel_id: "UC123456".to_string(),
+                handle: Some("@testchannel".to_string()),
+            },
+            MemberInfo {
+                display_name: "Test Member".to_string(),
+            },
+            MembershipInfo {
+                level: "Channel Member".to_string(),
+                confirmed_at: Utc::now(),
+                issued_at: Utc::now(),
+            },
+            VerificationInfo {
+                video_id: "video123".to_string(),
+                comment_id: "comment123".to_string(),
+            },
         );
 
         assert_eq!(payload.issuer.name, "Test Channel");
@@ -221,16 +209,24 @@ mod tests {
     fn test_payload_signing() {
         let payload = MembershipCardPayload::new(
             Uuid::new_v4(),
-            Uuid::new_v4(),
-            "Test Channel".to_string(),
-            "UC123456".to_string(),
-            None,
-            "Test Member".to_string(),
-            "Channel Member".to_string(),
-            Utc::now(),
-            Utc::now(),
-            "video123".to_string(),
-            "comment123".to_string(),
+            IssuerInfo {
+                id: Uuid::new_v4().to_string(),
+                name: "Test Channel".to_string(),
+                channel_id: "UC123456".to_string(),
+                handle: None,
+            },
+            MemberInfo {
+                display_name: "Test Member".to_string(),
+            },
+            MembershipInfo {
+                level: "Channel Member".to_string(),
+                confirmed_at: Utc::now(),
+                issued_at: Utc::now(),
+            },
+            VerificationInfo {
+                video_id: "video123".to_string(),
+                comment_id: "comment123".to_string(),
+            },
         );
 
         let key = b"test-signing-key";
@@ -244,16 +240,24 @@ mod tests {
     fn test_qr_svg_generation() {
         let payload = MembershipCardPayload::new(
             Uuid::new_v4(),
-            Uuid::new_v4(),
-            "Test Channel".to_string(),
-            "UC123456".to_string(),
-            None,
-            "Test Member".to_string(),
-            "Channel Member".to_string(),
-            Utc::now(),
-            Utc::now(),
-            "video123".to_string(),
-            "comment123".to_string(),
+            IssuerInfo {
+                id: Uuid::new_v4().to_string(),
+                name: "Test Channel".to_string(),
+                channel_id: "UC123456".to_string(),
+                handle: None,
+            },
+            MemberInfo {
+                display_name: "Test Member".to_string(),
+            },
+            MembershipInfo {
+                level: "Channel Member".to_string(),
+                confirmed_at: Utc::now(),
+                issued_at: Utc::now(),
+            },
+            VerificationInfo {
+                video_id: "video123".to_string(),
+                comment_id: "comment123".to_string(),
+            },
         );
 
         let key = b"test-signing-key";

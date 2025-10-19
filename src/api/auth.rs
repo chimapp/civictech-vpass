@@ -136,7 +136,7 @@ async fn youtube_callback(
     // Get user info from YouTube to get channel ID
     let user_info = get_youtube_user_info(&token_data.access_token)
         .await
-        .map_err(|e| AuthError::OAuthError(e))?;
+        .map_err(AuthError::OAuthError)?;
 
     // Create or find member
     let member = Member::find_or_create(
@@ -364,7 +364,8 @@ async fn home_page(session: Session) -> Result<axum::response::Html<String>, Aut
         <div class="footer">OP-1 inspired design</div>
     </div>
 </body>
-</html>"#.to_string()
+</html>"#
+            .to_string()
     } else {
         // User is not logged in - show login page with TE design
         r#"<!DOCTYPE html>

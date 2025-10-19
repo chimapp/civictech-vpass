@@ -262,7 +262,10 @@ async fn claim_card(
 
     let signing_key = {
         use ring::digest;
-        let hash = digest::digest(&digest::SHA256, state.config.session_secret.expose_secret().as_bytes());
+        let hash = digest::digest(
+            &digest::SHA256,
+            state.config.session_secret.expose_secret().as_bytes(),
+        );
         let mut key = [0u8; 32];
         key.copy_from_slice(hash.as_ref());
         key
@@ -543,8 +546,9 @@ async fn my_cards(
 
     let cards_html: String = cards
         .iter()
-        .map(|card| format!(
-            r#"<a href="/cards/{}" class="card">
+        .map(|card| {
+            format!(
+                r#"<a href="/cards/{}" class="card">
                 <div class="card-level">{}</div>
                 <div class="card-dates">
                     <div class="date-item">
@@ -558,11 +562,12 @@ async fn my_cards(
                 </div>
                 <div class="card-arrow">→</div>
             </a>"#,
-            card.id,
-            card.membership_level_label,
-            card.membership_confirmed_at.format("%Y-%m-%d"),
-            card.issued_at.format("%Y-%m-%d")
-        ))
+                card.id,
+                card.membership_level_label,
+                card.membership_confirmed_at.format("%Y-%m-%d"),
+                card.issued_at.format("%Y-%m-%d")
+            )
+        })
         .collect();
 
     let html = format!(
