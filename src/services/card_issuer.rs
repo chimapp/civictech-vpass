@@ -33,8 +33,8 @@ pub enum CardIssuanceError {
     #[error("Issuer not configured for Taiwan Digital Wallet (missing vc_uid)")]
     MissingVcUid,
 
-    #[error("Taiwan Digital Wallet API not configured")]
-    WalletApiNotConfigured,
+    #[error("Issuer API not configured")]
+    IssuerApiNotConfigured,
 }
 
 /// Request to issue a new membership card
@@ -66,11 +66,11 @@ pub struct IssueCardResult {
 /// 6. Stores the card in the database
 /// 7. Optionally generates Taiwan Digital Wallet QR code
 /// 8. Returns the card with QR code
-#[tracing::instrument(skip(pool, signing_key, wallet_api_config, request), fields(issuer_id = %request.issuer_id))]
+#[tracing::instrument(skip(pool, signing_key, issuer_api_config, request), fields(issuer_id = %request.issuer_id))]
 pub async fn issue_card(
     pool: &PgPool,
     signing_key: &[u8],
-    wallet_api_config: Option<(&str, &str)>, // (api_url, access_token)
+    issuer_api_config: Option<(&str, &str)>, // (api_base_url, access_token)
     request: IssueCardRequest,
 ) -> Result<IssueCardResult, CardIssuanceError> {
     tracing::info!("Starting card issuance process");
@@ -198,9 +198,9 @@ pub async fn issue_card(
         },
     });
 
-    // 9. Validate wallet API configuration
-    let (api_url, access_token) =
-        wallet_api_config.ok_or(CardIssuanceError::WalletApiNotConfigured)?;
+    // 9. Validate issuer API configuration
+    let (api_base_url, access_token) =
+        issuer_api_config.ok_or(CardIssuanceError::IssuerApiNotConfigured)?;
 
     // 10. Validate issuer has vc_uid configured
     let vc_uid = issuer
@@ -230,7 +230,7 @@ pub async fn issue_card(
     }];
 
     let wallet_qr_response =
-        crate::services::wallet_qr::generate_wallet_qr(api_url, access_token, vc_uid, fields)
+        crate::services::wallet_qr::generate_wallet_qr(api_base_url, access_token, vc_uid, fields)
             .await?;
 
     tracing::info!("Wallet QR code generated successfully");

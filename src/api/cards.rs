@@ -8,7 +8,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use secrecy::ExposeSecret;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tower_sessions::Session;
 use uuid::Uuid;
 
@@ -16,8 +16,11 @@ use crate::api::middleware::{
     auth::{get_authenticated_member, require_auth, AuthError},
     session::{AppState, SESSION_KEY_SESSION_STARTED_AT},
 };
-use crate::models::{card::MembershipCard, issuer::CardIssuer, oauth_session::OAuthSession};
-use crate::services::card_issuer;
+use crate::models::{
+    card::MembershipCard, issuer::CardIssuer, oauth_session::OAuthSession,
+    wallet_qr_code::WalletQrCode,
+};
+use crate::services::{card_issuer, wallet_qr};
 
 #[derive(Debug)]
 pub enum CardsError {
@@ -26,6 +29,7 @@ pub enum CardsError {
     IssuanceError(card_issuer::CardIssuanceError),
     SessionError(String),
     NotFound,
+    WalletQrError(wallet_qr::WalletQrError),
 }
 
 impl IntoResponse for CardsError {
@@ -44,6 +48,13 @@ impl IntoResponse for CardsError {
                 format!("Session error: {}", msg),
             ),
             CardsError::NotFound => (StatusCode::NOT_FOUND, "Card not found".to_string()),
+            CardsError::WalletQrError(e) => {
+                // Special handling for CredentialNotReady
+                if matches!(e, wallet_qr::WalletQrError::CredentialNotReady) {
+                    return (StatusCode::ACCEPTED, "Credential not ready yet").into_response();
+                }
+                (StatusCode::BAD_REQUEST, format!("Wallet QR error: {}", e))
+            }
         };
 
         (status, message).into_response()
@@ -351,10 +362,10 @@ async fn claim_card_for_channel(
     };
 
     // Prepare wallet API configuration if available
-    let wallet_api_config = state.config.wallet_api_url.as_ref().and_then(|url| {
+    let issuer_api_config = state.config.issuer_api_url.as_ref().and_then(|url| {
         state
             .config
-            .wallet_access_token
+            .issuer_access_token
             .as_ref()
             .map(|token| (url.as_str(), token.expose_secret().as_str()))
     });
@@ -362,7 +373,7 @@ async fn claim_card_for_channel(
     let result = card_issuer::issue_card(
         &state.pool,
         &signing_key,
-        wallet_api_config,
+        issuer_api_config,
         card_issuer::IssueCardRequest {
             issuer_id,
             member_youtube_user_id: member_record.youtube_user_id,
@@ -405,6 +416,100 @@ async fn show_card(
             .await
             .map_err(CardsError::DatabaseError)?;
 
+    let credential_status_block = wallet_qr
+        .as_ref()
+        .map(|qr| {
+            let cid_present = qr.cid.is_some();
+            let status_text = if cid_present {
+                "Credential issued! ✓"
+            } else {
+                "Waiting for wallet scan..."
+            };
+            let instructions_text = if cid_present {
+                "Credential is ready in your Taiwan Digital Wallet."
+            } else {
+                "Please scan the QR code with the Taiwan Digital Wallet app."
+            };
+            let poll_info = if cid_present {
+                "Credential is ready."
+            } else {
+                "Checking status..."
+            };
+            let spinner_classes = if cid_present {
+                "spinner-dot is-hidden"
+            } else {
+                "spinner-dot"
+            };
+
+            format!(
+                r#"<section class="credential-status" data-credential-status data-poll-url="/cards/{card_id}/poll-credential" data-cid-present="{cid_present}" data-max-polls="150">
+        <div class="status-indicator">
+            <span class="{spinner_classes}" data-role="spinner"></span>
+            <span class="status-text" data-role="status-text">{status_text}</span>
+        </div>
+        <div class="status-details">
+            <p class="status-instructions">{instructions_text}</p>
+            <p class="poll-info" data-role="poll-info">{poll_info}</p>
+        </div>
+    </section>"#,
+                card_id = card.id,
+                cid_present = cid_present,
+                spinner_classes = spinner_classes,
+                status_text = status_text,
+                instructions_text = instructions_text,
+                poll_info = poll_info,
+            )
+        })
+        .unwrap_or_default();
+
+    let qr_available = wallet_qr
+        .as_ref()
+        .map(|qr| qr.cid.is_none())
+        .unwrap_or(false);
+
+    let qr_markup = wallet_qr
+        .as_ref()
+        .map(|qr| {
+            if qr.cid.is_none() {
+                format!(
+                    r#"<div class="qr-code">
+                <img src="{}" alt="Taiwan Digital Wallet QR Code" />
+            </div>
+            <div class="scan-instruction">Scan with Taiwan Digital Wallet</div>"#,
+                    qr.qr_code
+                )
+            } else {
+                r#"<div class="qr-code placeholder">
+                <div class="placeholder-icon">✓</div>
+                <div class="placeholder-text">Credential already issued</div>
+            </div>"#
+                    .to_string()
+            }
+        })
+        .unwrap_or_else(|| {
+            r#"<div class="qr-code placeholder">
+                <div class="placeholder-text">QR code not available</div>
+            </div>"#
+                .to_string()
+        });
+
+    let download_link = format!("/cards/{}/qr", card.id);
+
+    let actions_markup = if qr_available {
+        format!(
+            r#"<div class="actions">
+            <a href="{}" download="wallet-qr-code.png" class="button">Download QR Code</a>
+            <a href="/cards/my-cards" class="button secondary">View All Cards</a>
+        </div>"#,
+            download_link
+        )
+    } else {
+        r#"<div class="actions">
+            <a href="/cards/my-cards" class="button secondary">View All Cards</a>
+        </div>"#
+            .to_string()
+    };
+
     let html = format!(
         r#"<!DOCTYPE html>
 <html>
@@ -444,7 +549,118 @@ async fn show_card(
             text-transform: uppercase;
             letter-spacing: 1px;
             display: inline-block;
-            margin-bottom: 40px;
+            margin-bottom: 24px;
+        }}
+        .credential-status {{
+            background: #F5F3ED;
+            border-left: 4px solid #B8915F;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }}
+        .status-indicator {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #1E3A5F;
+        }}
+        .spinner-dot {{
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #1E3A5F;
+            position: relative;
+            animation: pulse 1s ease-in-out infinite;
+        }}
+        .spinner-dot::after {{
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            right: -6px;
+            bottom: -6px;
+            border-radius: 50%;
+            border: 2px solid rgba(30,58,95,0.35);
+        }}
+        @keyframes pulse {{
+            0% {{ transform: scale(1); opacity: 1; }}
+            50% {{ transform: scale(1.25); opacity: 0.65; }}
+            100% {{ transform: scale(1); opacity: 1; }}
+        }}
+        .status-text {{
+            letter-spacing: -0.2px;
+        }}
+        .status-details {{
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 13px;
+            color: #666;
+        }}
+        .status-instructions {{
+            letter-spacing: 0.5px;
+        }}
+        .poll-info {{
+            font-family: 'Courier New', monospace;
+            color: #1E3A5F;
+        }}
+        .status-refresh-button {{
+            padding: 10px 18px;
+            background: #B8915F;
+            border: none;
+            color: #000;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 11px;
+            transition: background 0.2s, color 0.2s;
+        }}
+        .status-refresh-button:hover {{
+            background: #1E3A5F;
+            color: #fff;
+        }}
+        .status-refresh-button:focus {{
+            outline: 2px solid #1E3A5F;
+            outline-offset: 2px;
+        }}
+        .is-hidden {{
+            display: none !important;
+        }}
+        .toast-container {{
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 2000;
+        }}
+        .toast {{
+            background: #1E3A5F;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            font-size: 13px;
+            max-width: 280px;
+        }}
+        .toast.visible {{
+            opacity: 1;
+            transform: translateY(0);
+        }}
+        .toast-error {{
+            background: #FF5722;
+            color: #000;
+        }}
+        .toast-success {{
+            background: #B8915F;
+            color: #000;
         }}
         .card-display {{
             background: #F5F3ED;
@@ -464,14 +680,45 @@ async fn show_card(
         .qr-code {{
             background: #fff;
             padding: 24px;
-            display: inline-block;
-            margin-bottom: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px auto;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
         .qr-code img {{
             display: block;
             max-width: 280px;
             width: 100%;
+        }}
+        .qr-code.placeholder {{
+            width: 100%;
+            max-width: 280px;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: #E8E6E0;
+            border: 2px dashed rgba(30,58,95,0.35);
+        }}
+        .placeholder-icon {{
+            font-size: 36px;
+            color: #1E3A5F;
+        }}
+        .placeholder-text {{
+            font-size: 14px;
+            font-weight: 500;
+            color: #1E3A5F;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }}
+        .scan-instruction {{
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }}
         .info-grid {{
             display: grid;
@@ -548,14 +795,11 @@ async fn show_card(
 
         <div class="status">● Active Card</div>
 
+        {}
+
         <div class="card-display">
             <div class="membership-level">{}</div>
-            <div class="qr-code">
-                <img src="{}" alt="Taiwan Digital Wallet QR Code" />
-            </div>
-            <div style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px;">
-                Scan with Taiwan Digital Wallet
-            </div>
+            {}
         </div>
 
         <div class="info-grid">
@@ -573,25 +817,19 @@ async fn show_card(
             </div>
         </div>
 
-        <div class="actions">
-            <a href="{}" download="wallet-qr-code.png" class="button">Download QR Code</a>
-            <a href="/cards/my-cards" class="button secondary">View All Cards</a>
-        </div>
+        {}
     </div>
+    <div class="toast-container" data-role="toast-root"></div>
+    <script src="/static/js/credential-polling.js" defer></script>
 </body>
 </html>"#,
+        credential_status_block,
         card.membership_level_label,
-        wallet_qr
-            .as_ref()
-            .map(|qr| qr.qr_code.as_str())
-            .unwrap_or("Not available"),
+        qr_markup,
         card.membership_confirmed_at.format("%Y-%m-%d %H:%M UTC"),
         card.issued_at.format("%Y-%m-%d %H:%M UTC"),
         card.id,
-        wallet_qr
-            .as_ref()
-            .map(|qr| qr.qr_code.as_str())
-            .unwrap_or("Not available")
+        actions_markup
     );
 
     Ok(Html(html))
@@ -825,11 +1063,103 @@ async fn my_cards(
     Ok(Html(html))
 }
 
+#[derive(Debug, Serialize)]
+struct PollCredentialResponse {
+    status: String,
+    cid: Option<String>,
+    message: String,
+}
+
+/// Polls the Taiwan Digital Wallet API to check credential status and store CID
+async fn poll_credential(
+    State(state): State<AppState>,
+    Path(card_id): Path<Uuid>,
+    session: Session,
+) -> Result<axum::Json<PollCredentialResponse>, CardsError> {
+    let member = get_authenticated_member(&session)
+        .await
+        .map_err(CardsError::AuthError)?;
+
+    // Verify the card belongs to the member
+    let card = MembershipCard::find_by_id(&state.pool, card_id)
+        .await
+        .map_err(CardsError::DatabaseError)?
+        .ok_or(CardsError::NotFound)?;
+
+    if card.member_id != member.member_id {
+        return Err(CardsError::NotFound);
+    }
+
+    // Get the active wallet QR code for this card
+    let wallet_qr = WalletQrCode::find_active_by_card_id(&state.pool, card.id)
+        .await
+        .map_err(CardsError::DatabaseError)?
+        .ok_or_else(|| {
+            CardsError::WalletQrError(wallet_qr::WalletQrError::ApiError(
+                "No active wallet QR code found".to_string(),
+            ))
+        })?;
+
+    // Check if we already have a CID
+    if let Some(cid) = wallet_qr.cid {
+        tracing::info!(card_id = %card_id, cid = %cid, "CID already stored");
+        return Ok(axum::Json(PollCredentialResponse {
+            status: "ready".to_string(),
+            cid: Some(cid),
+            message: "Credential already issued".to_string(),
+        }));
+    }
+
+    // Poll the wallet API
+    let issuer_api_url = state.config.issuer_api_url.as_deref().ok_or_else(|| {
+        CardsError::WalletQrError(wallet_qr::WalletQrError::ApiError(
+            "Issuer API URL not configured. Set ISSUER_API_URL.".to_string(),
+        ))
+    })?;
+
+    let issuer_access_token = state
+        .config
+        .issuer_access_token
+        .as_ref()
+        .map(|token| token.expose_secret().as_str());
+
+    let credential_response = wallet_qr::poll_credential_status(
+        issuer_api_url,
+        issuer_access_token,
+        &wallet_qr.transaction_id,
+    )
+    .await
+    .map_err(CardsError::WalletQrError)?;
+
+    // Extract CID from JWT
+    let cid = wallet_qr::extract_cid_from_jwt(&credential_response.credential)
+        .map_err(CardsError::WalletQrError)?;
+
+    // Store the CID in the database
+    WalletQrCode::mark_as_scanned(&state.pool, wallet_qr.id, cid.clone())
+        .await
+        .map_err(CardsError::DatabaseError)?;
+
+    tracing::info!(
+        card_id = %card_id,
+        transaction_id = %wallet_qr.transaction_id,
+        cid = %cid,
+        "Credential CID stored successfully"
+    );
+
+    Ok(axum::Json(PollCredentialResponse {
+        status: "ready".to_string(),
+        cid: Some(cid),
+        message: "Credential issued and CID stored".to_string(),
+    }))
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/cards/my-cards", get(my_cards))
         .route("/cards/:id", get(show_card))
         .route("/cards/:id/qr", get(card_qr))
+        .route("/cards/:id/poll-credential", get(poll_credential))
         .route(
             "/channels/:issuer_id/claim",
             get(claim_page_for_channel).post(claim_card_for_channel),

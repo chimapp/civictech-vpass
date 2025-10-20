@@ -1,7 +1,10 @@
-use axum::{routing::get, Router};
+use axum::{
+    routing::{get, get_service},
+    Router,
+};
 use secrecy::ExposeSecret;
-use std::net::SocketAddr;
-use tower_http::trace::TraceLayer;
+use std::{net::SocketAddr, path::Path};
+use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use vpass::api::middleware::session::{create_session_layer, AppState};
@@ -44,12 +47,19 @@ async fn main() -> anyhow::Result<()> {
         config: config.clone(),
     };
 
+    // Serve static assets from web/static
+    let static_routes = Router::new().nest_service(
+        "/static",
+        get_service(ServeDir::new(Path::new("web").join("static"))),
+    );
+
     // Build router
     let app = Router::new()
         .route("/health", get(|| async { "OK" }))
         .merge(vpass::api::auth::router())
         .merge(vpass::api::cards::router())
         .merge(vpass::api::issuers::router())
+        .merge(static_routes)
         .layer(session_layer)
         .layer(TraceLayer::new_for_http())
         .with_state(state);
