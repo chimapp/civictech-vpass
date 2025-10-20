@@ -493,16 +493,26 @@ async fn show_card(
                 .to_string()
         });
 
-    let download_link = format!("/cards/{}/qr", card.id);
+    let deep_link = wallet_qr
+        .as_ref()
+        .and_then(|qr| qr.deep_link.as_deref())
+        .map(|link| html_escape::encode_double_quoted_attribute(link).to_string());
 
     let actions_markup = if qr_available {
-        format!(
-            r#"<div class="actions">
-            <a href="{}" download="wallet-qr-code.png" class="button">Download QR Code</a>
+        if let Some(link) = deep_link {
+            format!(
+                r#"<div class="actions">
+            <a href="{}" class="button">Open in Taiwan Wallet App</a>
             <a href="/cards/my-cards" class="button secondary">View All Cards</a>
         </div>"#,
-            download_link
-        )
+                link
+            )
+        } else {
+            r#"<div class="actions">
+            <a href="/cards/my-cards" class="button secondary">View All Cards</a>
+        </div>"#
+                .to_string()
+        }
     } else {
         r#"<div class="actions">
             <a href="/cards/my-cards" class="button secondary">View All Cards</a>

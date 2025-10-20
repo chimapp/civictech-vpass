@@ -111,6 +111,13 @@ pub struct CredentialResponse {
     pub credential: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct WalletApiErrorBody {
+    code: Option<String>,
+    #[allow(dead_code)]
+    message: Option<String>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct JwtClaims {
     jti: String,
@@ -145,29 +152,42 @@ pub async fn poll_credential_status(
     }
 
     let response = request.send().await?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .unwrap_or_else(|_| "Failed to read response body".to_string());
 
-    if !response.status().is_success() {
-        let status = response.status();
-        if status.as_u16() == 404 {
+    if !status.is_success() {
+        let is_not_ready = serde_json::from_str::<WalletApiErrorBody>(&body)
+            .ok()
+            .and_then(|err| err.code)
+            .map(|code| code == "61010")
+            .unwrap_or(false);
+
+        if status.as_u16() == 404 || is_not_ready {
             return Err(WalletQrError::CredentialNotReady);
         }
 
-        let error_text = response
-            .text()
-            .await
-            .unwrap_or_else(|_| "Unknown error".to_string());
         tracing::error!(
             status = %status,
-            error = %error_text,
+            error = %body,
             "Credential polling failed"
         );
         return Err(WalletQrError::ApiError(format!(
             "Status {}: {}",
-            status, error_text
+            status, body
         )));
     }
 
-    let credential_response: CredentialResponse = response.json().await.map_err(|e| {
+    // Some issuer responses return JSON with code/message even on non-error HTTP statuses.
+    if let Ok(error_body) = serde_json::from_str::<WalletApiErrorBody>(&body) {
+        if matches!(error_body.code.as_deref(), Some("61010")) {
+            return Err(WalletQrError::CredentialNotReady);
+        }
+    }
+
+    let credential_response: CredentialResponse = serde_json::from_str(&body).map_err(|e| {
         WalletQrError::ApiError(format!("Failed to parse credential response: {}", e))
     })?;
 
