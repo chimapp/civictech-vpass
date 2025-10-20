@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}My Cards - VPass{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/css/cards-list.css">
+{% endblock %}
+
+{% block content %}
+    <a href="/" class="back">Back to Dashboard</a>
+
+    <div class="header">
+        <h1>My Cards</h1>
+        <p class="subtitle">Membership Collection</p>
+    </div>
+
+    {% if cards.is_empty() %}
+        <div class="empty">
+            <p>You don't have any cards yet.</p>
+            <a href="/issuers" class="button">Browse Channels</a>
+        </div>
+    {% else %}
+        <div class="cards">
+            {% for card in cards %}
+                <a href="/cards/{{ card.id }}" class="card">
+                    <div class="card-level">{{ card.membership_level_label }}</div>
+                    <div class="card-dates">
+                        <div class="date-item">
+                            <span class="label">Confirmed</span>
+                            <span class="value">{{ card.membership_confirmed_at.format("%Y-%m-%d") }}</span>
+                        </div>
+                        <div class="date-item">
+                            <span class="label">Issued</span>
+                            <span class="value">{{ card.issued_at.format("%Y-%m-%d") }}</span>
+                        </div>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

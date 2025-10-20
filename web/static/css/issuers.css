@@ -1,0 +1,162 @@
+/* Issuers List Page */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 60px;
+}
+
+h1 {
+  font-size: 48px;
+  font-weight: 300;
+  letter-spacing: -1px;
+  color: var(--color-navy);
+}
+
+.btn {
+  padding: 16px 24px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  border: none;
+  display: inline-block;
+}
+
+.btn-primary {
+  background: var(--color-ochre);
+  color: var(--color-black);
+}
+
+.btn-primary:hover {
+  background: var(--color-navy);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: var(--color-white);
+  color: var(--color-black);
+}
+
+.btn-secondary:hover {
+  background: var(--color-navy);
+  color: #fff;
+}
+
+.btn-warning {
+  background: var(--color-orange);
+  color: #fff;
+}
+
+.btn-warning:hover {
+  background: #D84315;
+}
+
+.issuers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.issuer-card {
+  background: var(--color-white);
+  padding: 32px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.issuer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.issuer-header h3 {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--color-navy);
+}
+
+.status {
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.status.active {
+  background: var(--color-ochre);
+  color: var(--color-black);
+}
+
+.status.inactive {
+  background: var(--color-gray-cool);
+  color: #fff;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-gray-light);
+}
+
+.value {
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+  color: var(--color-black);
+  word-break: break-all;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.empty {
+  text-align: center;
+  padding: 80px 20px;
+  background: var(--color-white);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.empty p {
+  font-size: 16px;
+  color: var(--color-gray-mid);
+  margin-bottom: 32px;
+}
+
+@media (max-width: 600px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+}

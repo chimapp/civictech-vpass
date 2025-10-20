@@ -1,0 +1,141 @@
+/* My Cards List Styles */
+
+.container {
+  max-width: 1000px;
+  margin: 40px auto;
+}
+
+.header {
+  margin-bottom: 60px;
+}
+
+h1 {
+  font-size: 48px;
+  font-weight: 300;
+  letter-spacing: -1px;
+  color: var(--color-navy);
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--color-gray-mid);
+}
+
+.back {
+  display: inline-block;
+  color: var(--color-gray-mid);
+  text-decoration: none;
+  font-size: 13px;
+  margin-bottom: 40px;
+  transition: color 0.2s;
+}
+
+.back:hover {
+  color: var(--color-navy);
+}
+
+.back::before {
+  content: '← ';
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2px;
+}
+
+.card {
+  background: var(--color-white);
+  padding: 32px;
+  text-decoration: none;
+  color: var(--color-black);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.card:hover {
+  background: var(--color-navy);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.card:hover .card-arrow {
+  color: #fff;
+}
+
+.card-level {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
+.card-dates {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 20px;
+}
+
+.date-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.6;
+}
+
+.value {
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+}
+
+.card-arrow {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  font-size: 24px;
+  color: var(--color-gray-light);
+  transition: color 0.2s;
+}
+
+.empty {
+  text-align: center;
+  padding: 80px 20px;
+  background: var(--color-white);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.empty p {
+  font-size: 16px;
+  color: var(--color-gray-mid);
+  margin-bottom: 32px;
+}
+
+.button {
+  display: inline-block;
+  background: var(--color-ochre);
+  color: var(--color-black);
+  padding: 16px 32px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.button:hover {
+  background: var(--color-navy);
+  color: #fff;
+}

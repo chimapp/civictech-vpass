@@ -1,3 +1,4 @@
+use askama::Template;
 use axum::{
     extract::{Query, State},
     http::StatusCode,
@@ -262,281 +263,24 @@ async fn get_youtube_user_info(access_token: &str) -> Result<UserInfo, String> {
     })
 }
 
+// Template structure
+#[derive(Template)]
+#[template(path = "home.html")]
+struct HomeTemplate {
+    is_authenticated: bool,
+}
+
 /// Shows the home/login page
-async fn home_page(session: Session) -> Result<axum::response::Html<String>, AuthError> {
+async fn home_page(session: Session) -> Result<HomeTemplate, AuthError> {
     // Check if user is already logged in
     let member_id: Option<uuid::Uuid> = session
         .get(SESSION_KEY_MEMBER_ID)
         .await
         .map_err(|e| AuthError::SessionError(e.to_string()))?;
 
-    let html = if let Some(_member_id) = member_id {
-        // User is logged in - show dashboard with TE design
-        r#"<!DOCTYPE html>
-<html>
-<head>
-    <title>VPass</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background: #E8E6E0;
-            color: #000;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            width: 100%;
-        }
-        h1 {
-            font-size: 72px;
-            font-weight: 300;
-            letter-spacing: -2px;
-            margin-bottom: 8px;
-            color: #1E3A5F;
-        }
-        .subtitle {
-            font-size: 14px;
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #666;
-            margin-bottom: 60px;
-        }
-        .status-bar {
-            background: #B8915F;
-            color: #000;
-            padding: 12px 16px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 40px;
-            display: inline-block;
-        }
-        .menu {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            margin-bottom: 60px;
-        }
-        .button {
-            background: #F5F3ED;
-            color: #000;
-            padding: 20px 24px;
-            text-decoration: none;
-            font-size: 16px;
-            font-weight: 500;
-            text-align: left;
-            transition: background 0.2s, color 0.2s;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .button:hover {
-            background: #1E3A5F;
-            color: #fff;
-        }
-        .button::after {
-            content: '→';
-            font-size: 20px;
-        }
-        .button.danger {
-            background: #D5D3CD;
-            color: #666;
-        }
-        .button.danger:hover {
-            background: #FF5722;
-            color: #fff;
-        }
-        .footer {
-            font-size: 11px;
-            color: #999;
-            text-align: center;
-            margin-top: 40px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>VPass</h1>
-        <p class="subtitle">Membership System</p>
-        <div class="status-bar">● Connected</div>
-        <div class="menu">
-            <a href="/issuers" class="button">Browse Channels</a>
-            <a href="/cards/my-cards" class="button">My Cards</a>
-            <a href="/auth/logout" class="button danger">Sign Out</a>
-        </div>
-        <div class="footer">OP-1 inspired design</div>
-    </div>
-</body>
-</html>"#
-            .to_string()
-    } else {
-        // User is not logged in - show login page with TE design
-        r#"<!DOCTYPE html>
-<html>
-<head>
-    <title>VPass</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background: #E8E6E0;
-            color: #000;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 900px;
-            margin: 60px auto;
-        }
-        .hero {
-            margin-bottom: 80px;
-        }
-        h1 {
-            font-size: 96px;
-            font-weight: 300;
-            letter-spacing: -3px;
-            margin-bottom: 12px;
-            color: #1E3A5F;
-            line-height: 0.9;
-        }
-        .subtitle {
-            font-size: 14px;
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #666;
-        }
-        .description {
-            background: #F5F3ED;
-            padding: 40px;
-            margin: 60px 0;
-            border-left: 4px solid #1E3A5F;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        .description h2 {
-            font-size: 24px;
-            font-weight: 500;
-            margin-bottom: 20px;
-            color: #1E3A5F;
-        }
-        .description p {
-            font-size: 16px;
-            line-height: 1.6;
-            color: #444;
-            margin-bottom: 24px;
-        }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2px;
-            margin-bottom: 60px;
-        }
-        .feature {
-            background: #F5F3ED;
-            padding: 32px 24px;
-            text-align: center;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-        }
-        .feature:nth-child(1) { border-top: 3px solid #1E3A5F; }
-        .feature:nth-child(2) { border-top: 3px solid #B8915F; }
-        .feature:nth-child(3) { border-top: 3px solid #8C8C88; }
-        .feature-icon {
-            font-size: 32px;
-            margin-bottom: 16px;
-        }
-        .feature h3 {
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 12px;
-            color: #000;
-        }
-        .feature:nth-child(1) h3 { color: #1E3A5F; }
-        .feature:nth-child(2) h3 { color: #B8915F; }
-        .feature:nth-child(3) h3 { color: #8C8C88; }
-        .feature p {
-            font-size: 13px;
-            color: #666;
-            line-height: 1.5;
-        }
-        .cta {
-            text-align: center;
-            margin: 80px 0;
-        }
-        .login-button {
-            display: inline-block;
-            background: #1E3A5F;
-            color: #fff;
-            padding: 24px 48px;
-            text-decoration: none;
-            font-size: 16px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-            border: 2px solid #1E3A5F;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        .login-button:hover {
-            background: #B8915F;
-            color: #000;
-            border-color: #B8915F;
-        }
-        .footer {
-            text-align: center;
-            font-size: 11px;
-            color: #999;
-            margin-top: 100px;
-            padding-top: 40px;
-            border-top: 1px solid #333;
-        }
-        @media (max-width: 768px) {
-            h1 { font-size: 56px; }
-            .features { grid-template-columns: 1fr; }
-            .description { padding: 24px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="hero">
-            <h1>VPass</h1>
-            <p class="subtitle">Digital Membership Cards</p>
-        </div>
-
-        <div class="description">
-            <h2>Verify Your Membership</h2>
-            <p>A secure system for YouTube channel members to claim verifiable digital membership cards for offline events.</p>
-        </div>
-
-        <div class="cta">
-            <a href="/auth/youtube/login" class="login-button">Connect YouTube</a>
-        </div>
-
-        <div class="footer">
-            OP-1 inspired design · Built with Rust + Axum
-        </div>
-    </div>
-</body>
-</html>"#.to_string()
-    };
-
-    Ok(axum::response::Html(html))
+    Ok(HomeTemplate {
+        is_authenticated: member_id.is_some(),
+    })
 }
 
 /// Creates the auth router

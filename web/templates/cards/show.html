@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Card - VPass{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/css/cards.css">
+{% endblock %}
+
+{% block content %}
+    <a href="/cards/my-cards" class="back">Back to My Cards</a>
+
+    <div class="status">● Active Card</div>
+
+    {% if let Some(qr) = wallet_qr %}
+        {% let cid_present = qr.cid.is_some() %}
+        <section class="credential-status" data-credential-status data-poll-url="/cards/{{ card.id }}/poll-credential" data-cid-present="{{ cid_present }}" data-max-polls="150">
+            <div class="status-indicator">
+                <span class="spinner-dot {% if cid_present %}is-hidden{% endif %}" data-role="spinner"></span>
+                <span class="status-text" data-role="status-text">
+                    {% if cid_present %}
+                        Credential issued! ✓
+                    {% else %}
+                        Waiting for wallet scan...
+                    {% endif %}
+                </span>
+            </div>
+            <div class="status-details">
+                <p class="status-instructions">
+                    {% if cid_present %}
+                        Credential is ready in your Taiwan Digital Wallet.
+                    {% else %}
+                        Please scan the QR code with the Taiwan Digital Wallet app.
+                    {% endif %}
+                </p>
+                <p class="poll-info" data-role="poll-info">
+                    {% if cid_present %}
+                        Credential is ready.
+                    {% else %}
+                        Checking status...
+                    {% endif %}
+                </p>
+            </div>
+        </section>
+    {% endif %}
+
+    <div class="card-display">
+        <div class="membership-level">{{ card.membership_level_label }}</div>
+
+        {% if let Some(qr) = wallet_qr %}
+            {% if qr.cid.is_none() %}
+                <div class="qr-code">
+                    <img src="{{ qr.qr_code }}" alt="Taiwan Digital Wallet QR Code" />
+                </div>
+                <div class="scan-instruction">Scan with Taiwan Digital Wallet</div>
+            {% else %}
+                <div class="qr-code placeholder">
+                    <div class="placeholder-icon">✓</div>
+                    <div class="placeholder-text">Credential already issued</div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="qr-code placeholder">
+                <div class="placeholder-text">QR code not available</div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">Confirmed</div>
+            <div class="info-value">{{ card.membership_confirmed_at.format("%Y-%m-%d %H:%M UTC") }}</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Issued</div>
+            <div class="info-value">{{ card.issued_at.format("%Y-%m-%d %H:%M UTC") }}</div>
+        </div>
+        <div class="info-item" style="grid-column: 1 / -1;">
+            <div class="info-label">Card ID</div>
+            <div class="info-value">{{ card.id }}</div>
+        </div>
+    </div>
+
+    {% let qr_available = wallet_qr.as_ref().map(|qr| qr.cid.is_none()).unwrap_or(false) %}
+    <div class="actions">
+        {% if qr_available %}
+            {% if let Some(qr) = wallet_qr %}
+                {% if let Some(deep_link) = qr.deep_link.as_deref() %}
+                    <a href="{{ deep_link }}" class="button">Open in Taiwan Wallet App</a>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+        <a href="/cards/my-cards" class="button secondary">View All Cards</a>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script src="/static/js/credential-polling.js" defer></script>
+{% endblock %}

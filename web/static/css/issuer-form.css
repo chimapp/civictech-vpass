@@ -1,0 +1,157 @@
+/* Issuer Form Styles */
+
+.back {
+  display: inline-block;
+  color: var(--color-gray-mid);
+  text-decoration: none;
+  font-size: 13px;
+  margin-bottom: 40px;
+  transition: color 0.2s;
+}
+
+.back:hover {
+  color: var(--color-navy);
+}
+
+.back::before {
+  content: '← ';
+}
+
+h1 {
+  font-size: 48px;
+  font-weight: 300;
+  letter-spacing: -1px;
+  color: var(--color-navy);
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--color-gray-mid);
+  margin-bottom: 40px;
+}
+
+form {
+  background: var(--color-white);
+  padding: 40px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.form-group {
+  margin-bottom: 32px;
+}
+
+label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-gray-mid);
+  margin-bottom: 12px;
+}
+
+label .required {
+  color: var(--color-orange);
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #CCC;
+  color: var(--color-black);
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+  transition: border-color 0.2s;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-navy);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-gray-light);
+}
+
+.help-text {
+  font-size: 12px;
+  color: var(--color-gray-mid);
+  margin-top: 8px;
+}
+
+button {
+  width: 100%;
+  padding: 20px;
+  background: var(--color-ochre);
+  color: var(--color-black);
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+button:hover {
+  background: var(--color-navy);
+  color: #fff;
+}
+
+button:disabled {
+  background: #CCC;
+  cursor: not-allowed;
+}
+
+.autofill-section {
+  background: var(--color-gray-warm);
+  padding: 32px;
+  margin-bottom: 40px;
+  border-left: 3px solid var(--color-ochre);
+}
+
+.autofill-section h2 {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-ochre);
+  margin-bottom: 20px;
+}
+
+.autofill-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.autofill-input-group input {
+  flex: 1;
+}
+
+.autofill-input-group button {
+  width: auto;
+  padding: 16px 32px;
+  white-space: nowrap;
+}
+
+.error-message {
+  background: var(--color-orange);
+  color: #fff;
+  padding: 16px;
+  margin-top: 16px;
+  font-size: 13px;
+  display: none;
+}
+
+.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}

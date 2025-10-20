@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}VPass{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/css/home.css">
+{% endblock %}
+
+{% block content %}
+    <div class="full-height">
+        {% if is_authenticated %}
+            <h1>VPass</h1>
+            <p class="subtitle">Channel Membership Verification</p>
+
+            <div class="status-bar">● Dashboard</div>
+
+            <div class="menu">
+                <a href="/cards/my-cards" class="button">My Cards</a>
+                <a href="/issuers" class="button">Browse Channels</a>
+            </div>
+            <form action="/auth/logout" method="POST" style="margin: 0;">
+                <button type="submit" class="button danger">Logout</button>
+            </form>
+
+            <div class="footer">
+                <p>You are logged in to VPass</p>
+            </div>
+        {% else %}
+            <h1>VPass</h1>
+            <p class="subtitle">Channel Membership Verification</p>
+
+            <div class="auth-section">
+                <p class="auth-prompt">Sign in with your YouTube account to get started</p>
+
+                <div class="menu">
+                    <a href="/auth/youtube/login" class="button">Sign in with YouTube</a>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>Verify your channel membership with a digital card</p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

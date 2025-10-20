@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>領取會員卡 - VPass</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>領取會員卡</h1>
+
+        <!-- TODO: T036 - Implement card claiming interface -->
+        <div class="auth-buttons">
+            <a href="/auth/youtube/login" class="btn btn-youtube">
+                使用 YouTube 登入
+            </a>
+            <a href="/auth/twitch/login" class="btn btn-twitch">
+                使用 Twitch 登入
+            </a>
+        </div>
+
+        <div id="card-display" class="hidden">
+            <!-- Card will be rendered here after authentication -->
+            <div class="card">
+                <h2 id="card-issuer">頻道名稱</h2>
+                <div id="qr-code">
+                    <!-- QR code SVG will be inserted here -->
+                </div>
+                <p class="card-info">會員身份: <span id="member-level">基本會員</span></p>
+                <p class="card-expiry">有效期限: <span id="expiry-date">2024-12-31</span></p>
+            </div>
+
+            <div class="actions">
+                <button onclick="downloadCard()" class="btn btn-download">下載 QR Code</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // TODO: T036 - Implement card claiming logic
+        function downloadCard() {
+            // Download QR code as PNG
+            console.log('Download card functionality - TODO');
+        }
+    </script>
+</body>
+</html>
