@@ -1,4 +1,10 @@
-{ pkgs, lib, config, inputs, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  inputs,
+  ...
+}:
 
 {
   # https://devenv.sh/basics/
@@ -14,7 +20,14 @@
   # processes.dev.exec = "${lib.getExe pkgs.watchexec} -n -- ls -la";
 
   # https://devenv.sh/services/
-  # services.postgres.enable = true;
+  services.postgres.enable = true;
+  services.postgres.initialDatabases = [
+    {
+      name = "vpass_dev";
+      user = "postgres";
+      pass = "password";
+    }
+  ];
 
   # https://devenv.sh/scripts/
   scripts.hello.exec = ''
