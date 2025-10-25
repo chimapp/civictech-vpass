@@ -74,6 +74,7 @@ struct ShowCardTemplate {
 #[template(path = "cards/claim.html")]
 struct ClaimCardTemplate {
     issuer: CardIssuer,
+    is_authenticated: bool,
 }
 
 #[derive(Template)]
@@ -88,9 +89,8 @@ async fn claim_page_for_channel(
     Path(issuer_id): Path<Uuid>,
     session: Session,
 ) -> Result<ClaimCardTemplate, CardsError> {
-    let _member = get_authenticated_member(&session)
-        .await
-        .map_err(CardsError::AuthError)?;
+    // Check authentication status (but don't require it for viewing the page)
+    let is_authenticated = get_authenticated_member(&session).await.is_ok();
 
     // Fetch the issuer to display channel information
     let issuer = CardIssuer::find_by_id(&state.pool, issuer_id)
@@ -98,7 +98,10 @@ async fn claim_page_for_channel(
         .map_err(CardsError::DatabaseError)?
         .ok_or(CardsError::NotFound)?;
 
-    Ok(ClaimCardTemplate { issuer })
+    Ok(ClaimCardTemplate {
+        issuer,
+        is_authenticated,
+    })
 }
 
 #[derive(Deserialize)]
@@ -396,14 +399,18 @@ async fn poll_credential(
 }
 
 pub fn router() -> Router<AppState> {
-    Router::new()
+    // Public routes - no authentication required
+    let public_routes = Router::new()
+        .route("/channels/:issuer_id/claim", get(claim_page_for_channel));
+
+    // Protected routes - authentication required
+    let protected_routes = Router::new()
         .route("/cards/my-cards", get(my_cards))
         .route("/cards/:id", get(show_card))
         .route("/cards/:id/qr", get(card_qr))
         .route("/cards/:id/poll-credential", get(poll_credential))
-        .route(
-            "/channels/:issuer_id/claim",
-            get(claim_page_for_channel).post(claim_card_for_channel),
-        )
-        .layer(middleware::from_fn(require_auth))
+        .route("/channels/:issuer_id/claim", axum::routing::post(claim_card_for_channel))
+        .layer(middleware::from_fn(require_auth));
+
+    public_routes.merge(protected_routes)
 }

@@ -2,7 +2,6 @@ use askama::Template;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    middleware,
     response::{Html, IntoResponse, Response},
     routing::{get, post},
     Form, Json, Router,
@@ -10,7 +9,6 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::api::middleware::auth::require_auth;
 use crate::api::middleware::session::AppState;
 use crate::models::issuer::{CardIssuer, CreateIssuerData};
 use crate::services::youtube_channel;
@@ -423,5 +421,4 @@ pub fn router() -> Router<AppState> {
         .route("/issuers/:id/edit", get(edit_issuer_form))
         .route("/issuers/:id", post(update_issuer))
         .route("/issuers/:id/toggle", post(toggle_issuer_status))
-        .layer(middleware::from_fn(require_auth))
 }

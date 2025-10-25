@@ -29,12 +29,27 @@
         </ol>
     </div>
 
+    {% match is_authenticated %}
+        {% when false %}
+        <div class="info-box" style="background-color: #E8E6E0; margin-bottom: 24px;">
+            <p style="margin: 0; color: #666666;">
+                You'll be redirected to log in with YouTube when you submit.
+            </p>
+        </div>
+        {% when true %}
+    {% endmatch %}
+
     <form action="/channels/{{ issuer.id }}/claim" method="POST">
         <div class="form-group">
             <label for="comment_link">Comment URL or ID</label>
             <input type="text" name="comment_link" id="comment_link" required
                    placeholder="https://www.youtube.com/watch?v=...&lc=...">
         </div>
-        <button type="submit">Issue Card</button>
+        {% match is_authenticated %}
+            {% when true %}
+            <button type="submit">Issue Card</button>
+            {% when false %}
+            <button type="submit">Log in with YouTube & Claim</button>
+        {% endmatch %}
     </form>
 {% endblock %}
