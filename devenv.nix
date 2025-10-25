@@ -28,6 +28,7 @@
       pass = "password";
     }
   ];
+  services.postgres.listen_addresses = "localhost";
 
   # https://devenv.sh/scripts/
   scripts.hello.exec = ''

@@ -14,9 +14,11 @@ For detailed setup instructions, see [quickstart.md](specs/001-channel-membershi
 
 - Rust (stable, latest)
 - PostgreSQL 14+
-- Docker (optional, recommended)
+- Docker (optional, recommended) OR devenv (alternative)
 
 ### Quick Setup
+
+**Option 1: Using Docker**
 
 ```bash
 # 1. Copy environment template
@@ -26,10 +28,30 @@ cp .env.example .env
 # 2. Start PostgreSQL
 docker-compose up -d postgres
 
-# 3. Run database migrations (TODO: implement)
-# sqlx migrate run
+# 3. Run database migrations
+make migrate
 
 # 4. Run the server
+cargo run
+```
+
+**Option 2: Using devenv**
+
+```bash
+# 1. Install devenv if not already installed
+# See: https://devenv.sh/getting-started/
+
+# 2. Start PostgreSQL
+devenv up
+
+# 3. Copy environment template
+cp .env.example .env
+# Edit .env with your OAuth credentials
+
+# 4. Run database migrations
+make migrate
+
+# 5. Run the server
 cargo run
 ```
 

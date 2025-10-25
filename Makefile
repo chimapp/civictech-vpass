@@ -26,3 +26,19 @@ coverage:
 .PHONY: psql
 psql:
 	psql "postgresql://postgres:password@localhost:5432/vpass_dev"
+
+.PHONY: migrate
+migrate:
+	cargo sqlx migrate run
+
+.PHONY: migrate-add
+migrate-add:
+	@if [ -z "$(NAME)" ]; then \
+		echo "Usage: make migrate-add NAME=migration_name"; \
+		exit 1; \
+	fi
+	cargo sqlx migrate add $(NAME)
+
+.PHONY: migrate-revert
+migrate-revert:
+	cargo sqlx migrate revert
