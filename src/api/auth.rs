@@ -54,9 +54,16 @@ impl IntoResponse for AuthError {
     }
 }
 
+/// Query parameters for login
+#[derive(Deserialize)]
+struct LoginQuery {
+    return_url: Option<String>,
+}
+
 /// Initiates YouTube OAuth flow
 async fn youtube_login(
     State(state): State<AppState>,
+    Query(query): Query<LoginQuery>,
     session: Session,
 ) -> Result<Redirect, AuthError> {
     let redirect_uri = format!("{}/auth/youtube/callback", state.config.base_url);
@@ -85,6 +92,14 @@ async fn youtube_login(
         .insert(SESSION_KEY_SESSION_STARTED_AT, Utc::now().to_rfc3339())
         .await
         .map_err(|e| AuthError::SessionError(e.to_string()))?;
+
+    // Store return URL if provided
+    if let Some(return_url) = query.return_url {
+        session
+            .insert(SESSION_KEY_RETURN_URL, return_url)
+            .await
+            .map_err(|e| AuthError::SessionError(e.to_string()))?;
+    }
 
     tracing::info!("Redirecting to YouTube OAuth");
 

@@ -75,6 +75,7 @@ struct ShowCardTemplate {
 struct ClaimCardTemplate {
     issuer: CardIssuer,
     is_authenticated: bool,
+    issuer_id: Uuid,
 }
 
 #[derive(Template)]
@@ -101,6 +102,7 @@ async fn claim_page_for_channel(
     Ok(ClaimCardTemplate {
         issuer,
         is_authenticated,
+        issuer_id,
     })
 }
 
@@ -388,8 +390,8 @@ async fn poll_credential(
 
 pub fn router() -> Router<AppState> {
     // Public routes - no authentication required
-    let public_routes = Router::new()
-        .route("/channels/:issuer_id/claim", get(claim_page_for_channel));
+    let public_routes =
+        Router::new().route("/channels/:issuer_id/claim", get(claim_page_for_channel));
 
     // Protected routes - authentication required
     let protected_routes = Router::new()
@@ -397,7 +399,10 @@ pub fn router() -> Router<AppState> {
         .route("/cards/:id", get(show_card))
         .route("/cards/:id/qr", get(card_qr))
         .route("/cards/:id/poll-credential", get(poll_credential))
-        .route("/channels/:issuer_id/claim", axum::routing::post(claim_card_for_channel))
+        .route(
+            "/channels/:issuer_id/claim",
+            axum::routing::post(claim_card_for_channel),
+        )
         .layer(middleware::from_fn(require_auth));
 
     public_routes.merge(protected_routes)

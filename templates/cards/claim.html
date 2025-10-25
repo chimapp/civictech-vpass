@@ -19,37 +19,54 @@
         <p class="channel-id">{{ issuer.channel_handle.as_deref().unwrap_or(issuer.youtube_channel_id.as_str()) }}</p>
     </div>
 
-    <div class="info-box">
-        <h2>Instructions</h2>
-        <ol>
-            <li>Go to the channel's members-only verification video</li>
-            <li>Post a comment (any text is fine)</li>
-            <li>Copy the comment URL or ID</li>
-            <li>Paste it below and submit</li>
-        </ol>
-    </div>
-
     {% match is_authenticated %}
         {% when false %}
-        <div class="info-box" style="background-color: #E8E6E0; margin-bottom: 24px;">
-            <p style="margin: 0; color: #666666;">
-                You'll be redirected to log in with YouTube when you submit.
+        <div class="info-box" style="background-color: #F5F3ED; padding: 40px; margin-bottom: 40px; border-left: 4px solid #B8915F;">
+            <h2 style="font-size: 24px; font-weight: 400; margin-bottom: 24px; color: #1E3A5F;">👋 Almost there!</h2>
+
+            <p style="margin-bottom: 24px; line-height: 1.6; color: #000;">
+                To claim your membership card for <strong>{{ issuer.channel_name }}</strong>, you'll need to:
             </p>
+
+            <ol style="margin-left: 20px; margin-bottom: 32px; line-height: 1.8; color: #000;">
+                <li style="margin-bottom: 12px;">
+                    <strong>Log in with your YouTube account</strong><br>
+                    <span style="color: #666; font-size: 14px;">(so we can verify you're a real member)</span>
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Post a comment on the verification video</strong><br>
+                    <span style="color: #666; font-size: 14px;">(any text works - it's just to confirm membership timing)</span>
+                </li>
+                <li style="margin-bottom: 12px;">
+                    <strong>Come back here and paste your comment URL</strong><br>
+                    <span style="color: #666; font-size: 14px;">(we'll verify it and issue your card)</span>
+                </li>
+            </ol>
+
+            <p style="margin-bottom: 24px; color: #000; font-weight: 500;">Ready?</p>
+
+            <a href="/auth/youtube/login?return_url=/channels/{{ issuer_id }}/claim" class="button" style="display: inline-block; width: auto; padding: 16px 32px; background: #1E3A5F; color: #fff; text-decoration: none; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; transition: background 0.2s;">
+                Log in with YouTube
+            </a>
         </div>
         {% when true %}
-    {% endmatch %}
-
-    <form action="/channels/{{ issuer.id }}/claim" method="POST">
-        <div class="form-group">
-            <label for="comment_link">Comment URL or ID</label>
-            <input type="text" name="comment_link" id="comment_link" required
-                   placeholder="https://www.youtube.com/watch?v=...&lc=...">
+        <div class="info-box">
+            <h2>Instructions</h2>
+            <ol>
+                <li>Go to the channel's members-only verification video</li>
+                <li>Post a comment (any text is fine)</li>
+                <li>Copy the comment URL or ID</li>
+                <li>Paste it below and submit</li>
+            </ol>
         </div>
-        {% match is_authenticated %}
-            {% when true %}
+
+        <form action="/channels/{{ issuer.id }}/claim" method="POST">
+            <div class="form-group">
+                <label for="comment_link">Comment URL or ID</label>
+                <input type="text" name="comment_link" id="comment_link" required
+                       placeholder="https://www.youtube.com/watch?v=...&lc=...">
+            </div>
             <button type="submit">Issue Card</button>
-            {% when false %}
-            <button type="submit">Log in with YouTube & Claim</button>
-        {% endmatch %}
-    </form>
+        </form>
+    {% endmatch %}
 {% endblock %}
