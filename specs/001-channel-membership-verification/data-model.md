@@ -101,11 +101,11 @@ Immutable record of cards issued to members.
 | snapshot_json | JSONB | NOT NULL | Raw payload snapshot for auditing (comment + verification context) |
 | qr_payload | JSONB | NOT NULL | Data encoded into QR |
 | qr_signature | TEXT | NOT NULL | Hex-encoded HMAC-SHA256 |
-| is_primary | BOOLEAN | NOT NULL DEFAULT TRUE | Only one active card per issuer/member |
+| deleted_at | TIMESTAMPTZ | NULL | Soft deletion timestamp; NULL = active card |
 | issued_at | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | |
 
 Unique Constraints:
-- `uniq_active_membership_card` UNIQUE (issuer_id, member_id) WHERE is_primary = TRUE
+- `uniq_active_membership_card` UNIQUE (issuer_id, member_id) WHERE deleted_at IS NULL
 
 Indexes:
 - `idx_membership_cards_member` ON (member_id, issued_at DESC)

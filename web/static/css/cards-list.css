@@ -139,3 +139,15 @@ h1 {
   background: var(--color-navy);
   color: #fff;
 }
+
+.success-message {
+  background: var(--color-ochre);
+  color: var(--color-black);
+  padding: 16px 24px;
+  margin-bottom: 32px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}

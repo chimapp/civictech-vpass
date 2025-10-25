@@ -11,6 +11,7 @@ pub enum CardStatus {
     Expired,
     Revoked,
     Suspended,
+    Deleted,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -27,6 +28,7 @@ pub struct MembershipCard {
     pub expires_at: Option<DateTime<Utc>>,
     pub last_verified_at: Option<DateTime<Utc>>,
     pub verification_failures: i32,
+    pub deleted_at: Option<DateTime<Utc>>,
     pub issued_at: DateTime<Utc>,
 }
 
@@ -43,19 +45,20 @@ pub struct CreateCardData {
 
 impl MembershipCard {
     /// Creates a new membership card
-    /// Automatically marks old cards as replaced and sets expiration (30 days from now)
+    /// Automatically marks existing cards as deleted for the same issuer/member pair
+    /// and sets expiration (30 days from now)
     pub async fn create(pool: &PgPool, data: CreateCardData) -> Result<Self, sqlx::Error> {
         use chrono::Duration;
 
         // Start a transaction
         let mut tx = pool.begin().await?;
 
-        // Mark existing active cards for this issuer/member as replaced
+        // Mark any existing non-deleted cards as deleted for this issuer/member combination
         sqlx::query(
             r#"
             UPDATE membership_cards
-            SET status = 'revoked'
-            WHERE issuer_id = $1 AND member_id = $2 AND status = 'active'
+            SET status = 'deleted', deleted_at = NOW()
+            WHERE issuer_id = $1 AND member_id = $2 AND status != 'deleted'
             "#,
         )
         .bind(data.issuer_id)
@@ -110,7 +113,7 @@ impl MembershipCard {
     }
 
     /// Finds the active card for a member at a specific issuer
-    pub async fn find_primary_for_member(
+    pub async fn find_active_for_member(
         pool: &PgPool,
         issuer_id: Uuid,
         member_id: Uuid,
@@ -118,7 +121,8 @@ impl MembershipCard {
         let card = sqlx::query_as::<_, Self>(
             r#"
             SELECT * FROM membership_cards
-            WHERE issuer_id = $1 AND member_id = $2 AND status = 'active'
+            WHERE issuer_id = $1 AND member_id = $2
+              AND status = 'active'
             ORDER BY issued_at DESC
             LIMIT 1
             "#,
@@ -131,58 +135,34 @@ impl MembershipCard {
         Ok(card)
     }
 
-    /// Lists all cards for a member (across all issuers)
-    pub async fn list_by_member(
-        pool: &PgPool,
-        member_id: Uuid,
-        active_only: bool,
-    ) -> Result<Vec<Self>, sqlx::Error> {
-        let query = if active_only {
+    /// Lists all non-deleted cards for a member (across all issuers)
+    pub async fn list_by_member(pool: &PgPool, member_id: Uuid) -> Result<Vec<Self>, sqlx::Error> {
+        let cards = sqlx::query_as::<_, Self>(
             r#"
             SELECT * FROM membership_cards
-            WHERE member_id = $1 AND status = 'active'
+            WHERE member_id = $1 AND status != 'deleted'
             ORDER BY issued_at DESC
-            "#
-        } else {
-            r#"
-            SELECT * FROM membership_cards
-            WHERE member_id = $1
-            ORDER BY issued_at DESC
-            "#
-        };
-
-        let cards = sqlx::query_as::<_, Self>(query)
-            .bind(member_id)
-            .fetch_all(pool)
-            .await?;
+            "#,
+        )
+        .bind(member_id)
+        .fetch_all(pool)
+        .await?;
 
         Ok(cards)
     }
 
-    /// Lists all cards issued by a specific issuer
-    pub async fn list_by_issuer(
-        pool: &PgPool,
-        issuer_id: Uuid,
-        active_only: bool,
-    ) -> Result<Vec<Self>, sqlx::Error> {
-        let query = if active_only {
+    /// Lists all non-deleted cards issued by a specific issuer
+    pub async fn list_by_issuer(pool: &PgPool, issuer_id: Uuid) -> Result<Vec<Self>, sqlx::Error> {
+        let cards = sqlx::query_as::<_, Self>(
             r#"
             SELECT * FROM membership_cards
-            WHERE issuer_id = $1 AND status = 'active'
+            WHERE issuer_id = $1 AND status != 'deleted'
             ORDER BY issued_at DESC
-            "#
-        } else {
-            r#"
-            SELECT * FROM membership_cards
-            WHERE issuer_id = $1
-            ORDER BY issued_at DESC
-            "#
-        };
-
-        let cards = sqlx::query_as::<_, Self>(query)
-            .bind(issuer_id)
-            .fetch_all(pool)
-            .await?;
+            "#,
+        )
+        .bind(issuer_id)
+        .fetch_all(pool)
+        .await?;
 
         Ok(cards)
     }
@@ -202,6 +182,22 @@ impl MembershipCard {
         )
         .bind(id)
         .bind(status)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Soft deletes a card by setting status to 'deleted' and recording deletion timestamp
+    pub async fn soft_delete(pool: &PgPool, id: Uuid) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+            UPDATE membership_cards
+            SET status = 'deleted', deleted_at = NOW()
+            WHERE id = $1 AND status != 'deleted'
+            "#,
+        )
+        .bind(id)
         .execute(pool)
         .await?;
 
@@ -260,7 +256,8 @@ impl MembershipCard {
     pub async fn count_by_issuer(pool: &PgPool, issuer_id: Uuid) -> Result<i64, sqlx::Error> {
         let result: (i64,) = sqlx::query_as(
             r#"
-            SELECT COUNT(*) FROM membership_cards WHERE issuer_id = $1 AND status = 'active'
+            SELECT COUNT(*) FROM membership_cards
+            WHERE issuer_id = $1 AND status = 'active'
             "#,
         )
         .bind(issuer_id)

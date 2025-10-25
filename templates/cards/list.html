@@ -14,6 +14,10 @@
         <p class="subtitle">Membership Collection</p>
     </div>
 
+    {% if let Some(msg) = success_message %}
+        <div class="success-message">{{ msg }}</div>
+    {% endif %}
+
     {% if cards.is_empty() %}
         <div class="empty">
             <p>You don't have any cards yet.</p>

@@ -1,10 +1,10 @@
 use askama::Template;
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::{header, StatusCode},
     middleware,
-    response::{IntoResponse, Response},
-    routing::get,
+    response::{IntoResponse, Redirect, Response},
+    routing::{delete, get},
     Form, Router,
 };
 use chrono::{DateTime, Utc};
@@ -82,6 +82,12 @@ struct ClaimCardTemplate {
 #[template(path = "cards/list.html")]
 struct MyCardsTemplate {
     cards: Vec<MembershipCard>,
+    success_message: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MyCardsQuery {
+    deleted: Option<bool>,
 }
 
 /// Shows the claim card page for a specific channel/issuer
@@ -285,16 +291,26 @@ async fn card_qr(
 async fn my_cards(
     State(state): State<AppState>,
     session: Session,
+    Query(params): Query<MyCardsQuery>,
 ) -> Result<MyCardsTemplate, CardsError> {
     let member = get_authenticated_member(&session)
         .await
         .map_err(CardsError::AuthError)?;
 
-    let cards = MembershipCard::list_by_member(&state.pool, member.member_id, true)
+    let cards = MembershipCard::list_by_member(&state.pool, member.member_id)
         .await
         .map_err(CardsError::DatabaseError)?;
 
-    Ok(MyCardsTemplate { cards })
+    let success_message = if params.deleted == Some(true) {
+        Some("Card deleted successfully".to_string())
+    } else {
+        None
+    };
+
+    Ok(MyCardsTemplate {
+        cards,
+        success_message,
+    })
 }
 
 #[derive(Debug, Serialize)]
@@ -388,6 +404,40 @@ async fn poll_credential(
     }))
 }
 
+async fn delete_card(
+    State(state): State<AppState>,
+    session: Session,
+    Path(id): Path<Uuid>,
+) -> Result<Redirect, CardsError> {
+    let member = get_authenticated_member(&session)
+        .await
+        .map_err(CardsError::AuthError)?;
+
+    // Find the card and verify ownership
+    let card = MembershipCard::find_by_id(&state.pool, id)
+        .await
+        .map_err(CardsError::DatabaseError)?
+        .ok_or(CardsError::NotFound)?;
+
+    if card.member_id != member.member_id {
+        return Err(CardsError::NotFound);
+    }
+
+    // Soft delete the card
+    MembershipCard::soft_delete(&state.pool, id)
+        .await
+        .map_err(CardsError::DatabaseError)?;
+
+    tracing::info!(
+        member_id = %member.member_id,
+        card_id = %id,
+        "Card deleted successfully"
+    );
+
+    // Redirect back to my-cards page with success message
+    Ok(Redirect::to("/cards/my-cards?deleted=true"))
+}
+
 pub fn router() -> Router<AppState> {
     // Public routes - no authentication required
     let public_routes =
@@ -397,6 +447,7 @@ pub fn router() -> Router<AppState> {
     let protected_routes = Router::new()
         .route("/cards/my-cards", get(my_cards))
         .route("/cards/:id", get(show_card))
+        .route("/cards/:id", delete(delete_card))
         .route("/cards/:id/qr", get(card_qr))
         .route("/cards/:id/poll-credential", get(poll_credential))
         .route(

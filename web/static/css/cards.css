@@ -270,6 +270,23 @@
   content: '→';
 }
 
+.button.danger {
+  background: var(--color-orange);
+  color: #fff;
+  border: none;
+  width: 100%;
+}
+
+.button.danger:hover {
+  background: #d84315;
+  color: #fff;
+}
+
+.button.danger::after {
+  content: '×';
+  font-size: 28px;
+}
+
 /* Card List */
 .card-list {
   display: flex;

@@ -142,8 +142,8 @@ pub async fn issue_card(
 
     tracing::debug!(member_id = %member.id, "Member record created/updated");
 
-    // 5. Check for duplicate primary cards
-    let existing_card = MembershipCard::find_primary_for_member(pool, issuer.id, member.id).await?;
+    // 5. Check for duplicate active cards
+    let existing_card = MembershipCard::find_active_for_member(pool, issuer.id, member.id).await?;
 
     if existing_card.is_some() {
         return Err(CardIssuanceError::DuplicateCard);
