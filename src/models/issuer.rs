@@ -13,6 +13,8 @@ pub struct CardIssuer {
     pub verification_video_id: String,
     pub default_membership_label: String,
     pub vc_uid: Option<String>, // Taiwan Digital Wallet VC UID
+    pub members_only_video_id: Option<String>, // For membership verification
+    pub verification_method: String, // "video" or "comment"
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -167,6 +169,27 @@ impl CardIssuer {
         .bind(channel_handle)
         .bind(default_membership_label)
         .bind(vc_uid)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Updates members-only video ID for background verification
+    pub async fn update_members_only_video(
+        pool: &PgPool,
+        id: Uuid,
+        members_only_video_id: Option<String>,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+            UPDATE card_issuers
+            SET members_only_video_id = $2, updated_at = NOW()
+            WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .bind(members_only_video_id)
         .execute(pool)
         .await?;
 

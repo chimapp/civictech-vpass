@@ -38,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Create session layer
     let session_secret = config.session_secret.expose_secret().as_bytes();
-    let session_layer = create_session_layer(pool.clone(), session_secret).await?;
+    let session_layer = create_session_layer(pool.clone(), session_secret, &config.base_url).await?;
     tracing::info!("Session layer initialized");
 
     // Build application state

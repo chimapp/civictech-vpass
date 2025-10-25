@@ -187,17 +187,6 @@ async fn claim_card_for_channel(
         .map_err(|e| CardsError::SessionError(e.to_string()))?
         .with_timezone(&Utc);
 
-    let signing_key = {
-        use ring::digest;
-        let hash = digest::digest(
-            &digest::SHA256,
-            state.config.session_secret.expose_secret().as_bytes(),
-        );
-        let mut key = [0u8; 32];
-        key.copy_from_slice(hash.as_ref());
-        key
-    };
-
     // Prepare wallet API configuration if available
     let issuer_api_config = state.config.issuer_api_url.as_ref().and_then(|url| {
         state
@@ -209,7 +198,6 @@ async fn claim_card_for_channel(
 
     let result = card_issuer::issue_card(
         &state.pool,
-        &signing_key,
         issuer_api_config,
         card_issuer::IssueCardRequest {
             issuer_id,

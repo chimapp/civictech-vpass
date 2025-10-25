@@ -14,14 +14,18 @@ pub const SESSION_KEY_RETURN_URL: &str = "return_url";
 pub async fn create_session_layer(
     pool: PgPool,
     _session_secret: &[u8],
+    base_url: &str,
 ) -> Result<SessionManagerLayer<PostgresStore>, sqlx::Error> {
     // Create the session store backed by PostgreSQL
     let session_store = PostgresStore::new(pool);
     session_store.migrate().await?;
 
+    // Determine if we're using HTTPS based on base_url
+    let is_https = base_url.starts_with("https://");
+
     // Build the session layer
     let session_layer = SessionManagerLayer::new(session_store)
-        .with_secure(true) // Only send over HTTPS in production
+        .with_secure(is_https) // Only send over HTTPS in production
         .with_same_site(tower_sessions::cookie::SameSite::Lax)
         .with_expiry(Expiry::OnInactivity(time::Duration::hours(24)));
 

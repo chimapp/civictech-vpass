@@ -8,7 +8,7 @@ use crate::models::{
     member::{CreateMemberData, Member},
     wallet_qr_code::{CreateWalletQrCodeData, WalletQrCode},
 };
-use crate::services::{comment_verifier, qr_generator};
+use crate::services::comment_verifier;
 
 #[derive(thiserror::Error, Debug)]
 pub enum CardIssuanceError {
@@ -62,14 +62,12 @@ pub struct IssueCardResult {
 /// 2. Extracts comment ID from link
 /// 3. Verifies the comment on YouTube
 /// 4. Creates or updates member record
-/// 5. Generates QR payload and signature
-/// 6. Stores the card in the database
-/// 7. Optionally generates Taiwan Digital Wallet QR code
-/// 8. Returns the card with QR code
-#[tracing::instrument(skip(pool, signing_key, issuer_api_config, request), fields(issuer_id = %request.issuer_id))]
+/// 5. Stores the card in the database
+/// 6. Generates Taiwan Digital Wallet QR code
+/// 7. Returns the card with QR code
+#[tracing::instrument(skip(pool, issuer_api_config, request), fields(issuer_id = %request.issuer_id))]
 pub async fn issue_card(
     pool: &PgPool,
-    signing_key: &[u8],
     issuer_api_config: Option<(&str, &str)>, // (api_base_url, access_token)
     request: IssueCardRequest,
 ) -> Result<IssueCardResult, CardIssuanceError> {
@@ -151,38 +149,8 @@ pub async fn issue_card(
         return Err(CardIssuanceError::DuplicateCard);
     }
 
-    // 6. Generate QR payload
+    // 6. Create snapshot for auditing
     let now = Utc::now();
-    let card_id = Uuid::new_v4();
-
-    let qr_payload = qr_generator::MembershipCardPayload::new(
-        card_id,
-        qr_generator::IssuerInfo {
-            id: issuer.id.to_string(),
-            name: issuer.channel_name.clone(),
-            channel_id: issuer.youtube_channel_id.clone(),
-            handle: issuer.channel_handle.clone(),
-        },
-        qr_generator::MemberInfo {
-            display_name: verification_result.author_display_name.clone(),
-        },
-        qr_generator::MembershipInfo {
-            level: issuer.default_membership_label.clone(),
-            confirmed_at: verification_result.published_at,
-            issued_at: now,
-        },
-        qr_generator::VerificationInfo {
-            video_id: verification_result.video_id.clone(),
-            comment_id: verification_result.comment_id.clone(),
-        },
-    );
-
-    // 7. Sign the payload
-    let qr_signature = qr_payload.sign(signing_key);
-
-    tracing::debug!("QR payload generated and signed");
-
-    // 8. Create snapshot for auditing
     let snapshot = serde_json::json!({
         "comment": {
             "id": verification_result.comment_id,
@@ -198,17 +166,17 @@ pub async fn issue_card(
         },
     });
 
-    // 9. Validate issuer API configuration
+    // 7. Validate issuer API configuration
     let (api_base_url, access_token) =
         issuer_api_config.ok_or(CardIssuanceError::IssuerApiNotConfigured)?;
 
-    // 10. Validate issuer has vc_uid configured
+    // 8. Validate issuer has vc_uid configured
     let vc_uid = issuer
         .vc_uid
         .as_ref()
         .ok_or(CardIssuanceError::MissingVcUid)?;
 
-    // 11. Generate Taiwan Digital Wallet QR code
+    // 9. Generate Taiwan Digital Wallet QR code
     tracing::debug!("Generating Taiwan Digital Wallet QR code");
 
     // Sanitize display name: Taiwan Digital Wallet only allows Chinese, English, numbers, and underscore
@@ -235,7 +203,7 @@ pub async fn issue_card(
 
     tracing::info!("Wallet QR code generated successfully");
 
-    // 12. Store the card
+    // 10. Store the card
     let card = MembershipCard::create(
         pool,
         CreateCardData {
@@ -246,15 +214,13 @@ pub async fn issue_card(
             verification_comment_id: verification_result.comment_id,
             verification_video_id: verification_result.video_id,
             snapshot_json: snapshot,
-            qr_payload: qr_payload.to_jsonb(),
-            qr_signature: qr_signature.clone(),
         },
     )
     .await?;
 
     tracing::info!(card_id = %card.id, "Card created successfully");
 
-    // 13. Create wallet QR code record
+    // 11. Create wallet QR code record
     let wallet_qr = WalletQrCode::create(
         pool,
         CreateWalletQrCodeData {

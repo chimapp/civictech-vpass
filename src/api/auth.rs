@@ -3,7 +3,7 @@ use axum::{
     extract::{Query, State},
     http::StatusCode,
     response::{IntoResponse, Redirect, Response},
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use chrono::Utc;
@@ -175,7 +175,7 @@ async fn youtube_callback(
 
     tracing::info!(member_id = %member.id, "Member authenticated successfully");
 
-    // Get the return URL from session, or default to /issuers
+    // Get the return URL from session, or default to home
     let return_url: Option<String> = session
         .get(SESSION_KEY_RETURN_URL)
         .await
@@ -186,11 +186,11 @@ async fn youtube_callback(
         let _ = session.remove::<String>(SESSION_KEY_RETURN_URL).await;
     }
 
-    let redirect_to = return_url.unwrap_or_else(|| "/issuers".to_string());
+    let redirect_to = return_url.unwrap_or_else(|| "/".to_string());
 
     tracing::info!(redirect_to = %redirect_to, "Redirecting after successful authentication");
 
-    // Redirect to the stored URL or default to issuers page
+    // Redirect to the stored URL or default to home page
     Ok(Redirect::to(&redirect_to))
 }
 
@@ -289,5 +289,5 @@ pub fn router() -> Router<AppState> {
         .route("/", get(home_page))
         .route("/auth/youtube/login", get(youtube_login))
         .route("/auth/youtube/callback", get(youtube_callback))
-        .route("/auth/logout", get(logout))
+        .route("/auth/logout", post(logout))
 }
