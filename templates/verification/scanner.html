@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Verification - {{ event.event_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 40px 20px;">
+    <a href="/verify" class="back" style="display: inline-block; margin-bottom: 20px;">&larr; Back to Events</a>
+
+    <div class="header">
+        <h1>{{ event.event_name }}</h1>
+        <h2 style="color: #666; font-weight: 400;">{{ issuer.channel_name }}</h2>
+    </div>
+
+    <div id="instructions" style="background: #f5f3ed; padding: 24px; border-radius: 8px; margin: 32px 0;">
+        <h3 style="margin-top: 0;">How to Verify Membership</h3>
+        <ol style="line-height: 1.8;">
+            <li>Open <strong>Taiwan Digital Wallet</strong> app on your phone</li>
+            <li>Show the QR code below to attendees</li>
+            <li>Ask them to scan it with their wallet app</li>
+            <li>Wait for verification result to appear</li>
+        </ol>
+    </div>
+
+    <div id="qr-container" style="text-align: center; margin: 40px 0;">
+        <div id="loading" style="padding: 60px;">
+            <p style="font-size: 18px;">Generating QR code...</p>
+        </div>
+
+        <div id="qr-display" style="display: none;">
+            <div id="qr-image-container" style="background: white; display: inline-block; padding: 32px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <img id="qr-image" style="width: 400px; height: 400px; display: block;" />
+            </div>
+
+            <div id="timer" style="margin-top: 24px; font-size: 16px; color: #666;">
+                Expires in: <span id="countdown" style="font-weight: 700; color: #1e3a5f;">5:00</span>
+            </div>
+
+            <button id="refresh-btn" onclick="requestNewQR()" style="margin-top: 24px; padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; display: none;">
+                Generate New QR Code
+            </button>
+        </div>
+    </div>
+
+    <div id="result-container" style="margin-top: 40px;">
+        <div id="pending-status" style="display: none; text-align: center; padding: 32px; background: #e8f4fd; border-radius: 8px;">
+            <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
+            <h3 style="margin: 0 0 8px 0;">Waiting for scan...</h3>
+            <p style="margin: 0; color: #666;">Ask the attendee to scan the QR code</p>
+        </div>
+
+        <div id="success-result" style="display: none; padding: 32px; background: #d4edda; border: 2px solid #28a745; border-radius: 8px;">
+            <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">✅</div>
+            <h3 style="margin: 0 0 16px 0; text-align: center; color: #155724;">Verification Successful!</h3>
+            <div id="member-info" style="background: white; padding: 20px; border-radius: 4px; margin-top: 16px;"></div>
+            <button onclick="requestNewQR()" style="margin-top: 24px; padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; width: 100%;">
+                Verify Next Person
+            </button>
+        </div>
+
+        <div id="failed-result" style="display: none; padding: 32px; background: #f8d7da; border: 2px solid #dc3545; border-radius: 8px;">
+            <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">❌</div>
+            <h3 style="margin: 0 0 16px 0; text-align: center; color: #721c24;">Verification Failed</h3>
+            <p id="error-message" style="text-align: center; margin: 0;"></p>
+            <button onclick="requestNewQR()" style="margin-top: 24px; padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; width: 100%;">
+                Try Again
+            </button>
+        </div>
+
+        <div id="expired-result" style="display: none; padding: 32px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px;">
+            <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">⏰</div>
+            <h3 style="margin: 0 0 16px 0; text-align: center;">QR Code Expired</h3>
+            <p style="text-align: center; margin: 0 0 24px 0;">QR codes expire after 5 minutes for security.</p>
+            <button onclick="requestNewQR()" style="padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; width: 100%;">
+                Generate New QR Code
+            </button>
+        </div>
+    </div>
+
+    <div style="margin-top: 48px; text-align: center;">
+        <a href="/verify/{{ event.id }}/history" style="color: #1e3a5f; text-decoration: none; font-size: 16px;">
+            📊 View Verification History
+        </a>
+    </div>
+</div>
+
+<script>
+const eventId = "{{ event.id }}";
+let transactionId = null;
+let pollInterval = null;
+let expiresAt = null;
+let countdownInterval = null;
+
+// Initialize: Request QR code on page load
+window.onload = function() {
+    requestNewQR();
+};
+
+async function requestNewQR() {
+    // Clear any existing intervals
+    if (pollInterval) clearInterval(pollInterval);
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    // Reset UI
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('qr-display').style.display = 'none';
+    document.getElementById('pending-status').style.display = 'none';
+    document.getElementById('success-result').style.display = 'none';
+    document.getElementById('failed-result').style.display = 'none';
+    document.getElementById('expired-result').style.display = 'none';
+    document.getElementById('refresh-btn').style.display = 'none';
+
+    try {
+        const response = await fetch(`/verify/${eventId}/request-qr`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        transactionId = data.transaction_id;
+        expiresAt = Date.now() + (data.expires_in_seconds * 1000);
+
+        // Display QR code
+        document.getElementById('qr-image').src = `data:image/png;base64,${data.qrcode_image}`;
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('qr-display').style.display = 'block';
+        document.getElementById('pending-status').style.display = 'block';
+
+        // Start countdown timer
+        startCountdown();
+
+        // Start polling for result
+        pollInterval = setInterval(checkResult, 2000); // Poll every 2 seconds
+
+    } catch (error) {
+        console.error('Failed to request QR code:', error);
+        document.getElementById('loading').innerHTML = `
+            <p style="color: #dc3545;">Failed to generate QR code</p>
+            <p style="font-size: 14px; color: #666;">${error.message}</p>
+            <button onclick="requestNewQR()" style="margin-top: 16px; padding: 12px 24px; background: #b8915f; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                Retry
+            </button>
+        `;
+    }
+}
+
+function startCountdown() {
+    updateCountdown();
+    countdownInterval = setInterval(updateCountdown, 1000);
+}
+
+function updateCountdown() {
+    const remaining = Math.max(0, expiresAt - Date.now());
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+
+    document.getElementById('countdown').textContent =
+        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+    if (remaining <= 0) {
+        clearInterval(countdownInterval);
+        clearInterval(pollInterval);
+        document.getElementById('countdown').style.color = '#dc3545';
+        document.getElementById('refresh-btn').style.display = 'inline-block';
+    }
+}
+
+async function checkResult() {
+    if (!transactionId) return;
+
+    try {
+        const response = await fetch(`/verify/${eventId}/check-result/${transactionId}`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.status === 'completed') {
+            clearInterval(pollInterval);
+            clearInterval(countdownInterval);
+            displayResult(result);
+        } else if (result.status === 'expired') {
+            clearInterval(pollInterval);
+            clearInterval(countdownInterval);
+            showExpired();
+        }
+        // If status is 'pending', continue polling
+
+    } catch (error) {
+        console.error('Failed to check result:', error);
+        // Continue polling on error
+    }
+}
+
+function displayResult(result) {
+    document.getElementById('pending-status').style.display = 'none';
+    document.getElementById('qr-display').style.display = 'none';
+
+    if (result.verify_result === true) {
+        // Success
+        document.getElementById('success-result').style.display = 'block';
+
+        // Display member info if available
+        if (result.member_info) {
+            const memberInfoDiv = document.getElementById('member-info');
+            memberInfoDiv.innerHTML = '<h4 style="margin-top: 0;">Member Information:</h4>';
+
+            for (const [key, value] of Object.entries(result.member_info)) {
+                if (key !== 'credentialType') {
+                    memberInfoDiv.innerHTML += `
+                        <p style="margin: 8px 0;"><strong>${key}:</strong> ${value}</p>
+                    `;
+                }
+            }
+        }
+    } else {
+        // Failed
+        document.getElementById('failed-result').style.display = 'block';
+        document.getElementById('error-message').textContent =
+            result.result_description || 'Verification failed';
+    }
+}
+
+function showExpired() {
+    document.getElementById('pending-status').style.display = 'none';
+    document.getElementById('qr-display').style.display = 'none';
+    document.getElementById('expired-result').style.display = 'block';
+}
+</script>
+{% endblock %}

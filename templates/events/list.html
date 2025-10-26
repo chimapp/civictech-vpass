@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Events{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/css/cards-list.css">
+{% endblock %}
+
+{% block content %}
+    <a href="/" class="back">Back to Dashboard</a>
+
+    <div class="header">
+        <h1>Events</h1>
+        <p class="subtitle">Manage Events</p>
+    </div>
+
+    {% if events.is_empty() %}
+        <div class="empty">
+            <p>No events found.</p>
+            <a href="/events/new" class="button">Create New Event</a>
+        </div>
+    {% else %}
+        <div style="margin-bottom: 40px;">
+            <a href="/events/new" class="button">Create New Event</a>
+        </div>
+
+        <div class="cards">
+            {% for event in events %}
+                <a href="/events/{{ event.id }}" class="card">
+                    <div class="card-level">{{ event.event_name }}</div>
+                    <div class="card-dates">
+                        <div class="date-item">
+                            <span class="label">Date</span>
+                            <span class="value">{{ event.event_date }}</span>
+                        </div>
+                        {% match event.event_location %}
+                            {% when Some with (loc) %}
+                                <div class="date-item">
+                                    <span class="label">Location</span>
+                                    <span class="value">{{ loc }}</span>
+                                </div>
+                            {% when None %}
+                        {% endmatch %}
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

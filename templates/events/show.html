@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.event_name }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/static/css/cards-list.css">
+{% endblock %}
+
+{% block content %}
+    <a href="/events" class="back">Back to Events</a>
+
+    <div class="header">
+        <h1>{{ event.event_name }}</h1>
+        <p class="subtitle">Event Details</p>
+    </div>
+
+    <div class="event-details">
+        <p><strong>Channel:</strong> {{ issuer.channel_name }}</p>
+        <p><strong>Date:</strong> {{ event.event_date }}</p>
+        {% match event.event_location %}
+            {% when Some with (loc) %}
+                <p><strong>Location:</strong> {{ loc }}</p>
+            {% when None %}
+        {% endmatch %}
+        {% match event.event_description %}
+            {% when Some with (desc) %}
+                <p><strong>Description:</strong> {{ desc }}</p>
+            {% when None %}
+        {% endmatch %}
+    </div>
+
+    <div class="event-stats">
+        <h2>Verification Stats</h2>
+        <p>Total Scans: {{ stats.total_scans }}</p>
+        <p>Successful: {{ stats.successful_scans }}</p>
+        <p>Failed: {{ stats.failed_scans }}</p>
+        <p>Unique Cards: {{ stats.unique_cards }}</p>
+    </div>
+
+    <div class="actions" style="margin-top: 40px; display: flex; gap: 16px;">
+        <a href="/verify/{{ event.id }}/scanner" class="button">Start Scanner</a>
+        <a href="/verify/{{ event.id }}/history" class="button">View History</a>
+    </div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Verification{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Select Event to Verify</h1>
+
+    <div class="events-list">
+        {% if events.is_empty() %}
+            <p>No active events found.</p>
+        {% else %}
+            <ul>
+                {% for event in events %}
+                <li>
+                    <a href="/verify/{{ event.id }}/scanner">{{ event.event_name }}</a>
+                    <span class="event-date">{{ event.event_date }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

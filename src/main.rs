@@ -38,7 +38,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Create session layer
     let session_secret = config.session_secret.expose_secret().as_bytes();
-    let session_layer = create_session_layer(pool.clone(), session_secret, &config.base_url).await?;
+    let session_layer =
+        create_session_layer(pool.clone(), session_secret, &config.base_url).await?;
     tracing::info!("Session layer initialized");
 
     // Build application state
@@ -59,6 +60,8 @@ async fn main() -> anyhow::Result<()> {
         .merge(vpass::api::auth::router())
         .merge(vpass::api::cards::router())
         .merge(vpass::api::issuers::router())
+        .merge(vpass::api::events::router())
+        .merge(vpass::api::verification::router())
         .merge(static_routes)
         .layer(session_layer)
         .layer(TraceLayer::new_for_http())

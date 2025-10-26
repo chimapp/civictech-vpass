@@ -205,11 +205,7 @@ impl MembershipCard {
     }
 
     /// Extends card expiration and resets verification failures
-    pub async fn extend_expiration(
-        pool: &PgPool,
-        id: Uuid,
-        days: i64,
-    ) -> Result<(), sqlx::Error> {
+    pub async fn extend_expiration(pool: &PgPool, id: Uuid, days: i64) -> Result<(), sqlx::Error> {
         use chrono::Duration;
 
         let new_expires_at = chrono::Utc::now() + Duration::days(days);

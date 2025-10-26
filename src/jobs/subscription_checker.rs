@@ -26,7 +26,10 @@ pub struct VerificationStats {
 /// 2. Check video access using members-only video ID
 /// 3. If still a member: extend card expiration by 30 days
 /// 4. If not a member: increment failure count, expire after 3 failures
-pub async fn verify_membership_cards(pool: &PgPool, batch_size: i64) -> Result<VerificationStats, Box<dyn std::error::Error>> {
+pub async fn verify_membership_cards(
+    pool: &PgPool,
+    batch_size: i64,
+) -> Result<VerificationStats, Box<dyn std::error::Error>> {
     let mut stats = VerificationStats {
         total_checked: 0,
         still_members: 0,
@@ -74,10 +77,7 @@ pub async fn verify_membership_cards(pool: &PgPool, batch_size: i64) -> Result<V
         }
     }
 
-    tracing::info!(
-        ?stats,
-        "Membership verification job completed"
-    );
+    tracing::info!(?stats, "Membership verification job completed");
 
     Ok(stats)
 }
@@ -128,8 +128,8 @@ async fn verify_single_card(
             .map_err(|_| VerificationError::TokenRefreshFailed)?;
         let youtube_client_secret = std::env::var("YOUTUBE_CLIENT_SECRET")
             .map_err(|_| VerificationError::TokenRefreshFailed)?;
-        let base_url = std::env::var("BASE_URL")
-            .map_err(|_| VerificationError::TokenRefreshFailed)?;
+        let base_url =
+            std::env::var("BASE_URL").map_err(|_| VerificationError::TokenRefreshFailed)?;
 
         let token_data = youtube::refresh_access_token(
             &refresh_token,
@@ -176,7 +176,11 @@ async fn verify_single_card(
         "comment" => membership_checker::check_comment_access(&access_token, video_id)
             .await
             .map_err(|e| VerificationError::ApiError(e.to_string()))?,
-        _ => return Err(VerificationError::ApiError("Invalid verification method".to_string())),
+        _ => {
+            return Err(VerificationError::ApiError(
+                "Invalid verification method".to_string(),
+            ))
+        }
     };
 
     // 5. Update card based on result

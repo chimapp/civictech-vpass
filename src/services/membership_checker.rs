@@ -54,12 +54,14 @@ pub async fn check_video_access(
     match response.status() {
         StatusCode::OK => {
             // Parse response to check if video is accessible
-            let video_response: VideoResponse = response.json().await.map_err(|e| {
-                MembershipCheckError::ApiError {
-                    status: StatusCode::INTERNAL_SERVER_ERROR,
-                    message: format!("Failed to parse response: {}", e),
-                }
-            })?;
+            let video_response: VideoResponse =
+                response
+                    .json()
+                    .await
+                    .map_err(|e| MembershipCheckError::ApiError {
+                        status: StatusCode::INTERNAL_SERVER_ERROR,
+                        message: format!("Failed to parse response: {}", e),
+                    })?;
 
             // If items is empty, user doesn't have access
             Ok(!video_response.items.is_empty())

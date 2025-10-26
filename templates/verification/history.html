@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Verification History - {{ event.event_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Verification History</h1>
+    <h2>{{ event.event_name }} - {{ issuer.channel_name }}</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Result</th>
+                <th>Member</th>
+                <th>Card ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ve in events %}
+            <tr>
+                <td>{{ ve.event.verified_at }}</td>
+                <td style="color: {% if ve.event.verification_result == "success" %}green{% else %}red{% endif %}">
+                    {{ ve.event.verification_result }}
+                </td>
+                <td>
+                    {% match ve.member %}
+                        {% when Some with (m) %}
+                            {{ m.default_display_name }}
+                        {% when None %}
+                            N/A
+                    {% endmatch %}
+                </td>
+                <td>
+                    {% match ve.card %}
+                        {% when Some with (c) %}
+                            {{ c.id }}
+                        {% when None %}
+                            N/A
+                    {% endmatch %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        Page {{ page }} of {{ (total + per_page - 1) / per_page }}
+        <br>
+        {% if page > 1 %}
+            <a href="?page={{ page - 1 }}">Previous</a>
+        {% endif %}
+        {% if page * per_page < total %}
+            <a href="?page={{ page + 1 }}">Next</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

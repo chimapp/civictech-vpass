@@ -18,6 +18,11 @@ pub struct Config {
     pub issuer_api_url: Option<String>,
     pub issuer_access_token: Option<Secret<String>>,
 
+    // Taiwan Digital Wallet Verifier API (OIDVP)
+    pub verifier_api_url: Option<String>,
+    pub verifier_access_token: Option<Secret<String>>,
+    pub verifier_ref: Option<String>,
+
     // Security
     pub session_secret: Secret<String>,
 }
@@ -46,6 +51,13 @@ impl Config {
                 .get::<String>("issuer_access_token")
                 .ok()
                 .map(Secret::new),
+
+            verifier_api_url: config.get("verifier_api_url").ok(),
+            verifier_access_token: config
+                .get::<String>("verifier_access_token")
+                .ok()
+                .map(Secret::new),
+            verifier_ref: config.get("verifier_ref").ok(),
 
             session_secret: Secret::new(config.get("session_secret")?),
         })

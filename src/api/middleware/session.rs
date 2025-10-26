@@ -18,7 +18,6 @@ pub async fn create_session_layer(
 ) -> Result<SessionManagerLayer<PostgresStore>, sqlx::Error> {
     // Create the session store backed by PostgreSQL
     let session_store = PostgresStore::new(pool);
-    session_store.migrate().await?;
 
     // Determine if we're using HTTPS based on base_url
     let is_https = base_url.starts_with("https://");

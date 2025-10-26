@@ -28,6 +28,8 @@ impl OAuthSession {
     /// Creates a new OAuth session with plaintext tokens
     /// Note: Tokens are stored as plaintext in the database.
     /// For production, enable PostgreSQL encryption at rest (e.g., TDE or encrypted partitions).
+    ///
+    /// If a session already exists for this member, it will be replaced (UPSERT behavior).
     pub async fn create(pool: &PgPool, data: CreateSessionData) -> Result<Self, sqlx::Error> {
         let session = sqlx::query_as::<_, Self>(
             r#"
@@ -35,6 +37,13 @@ impl OAuthSession {
                 member_id, access_token, refresh_token, token_scope, token_expires_at
             )
             VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (member_id)
+            DO UPDATE SET
+                access_token = EXCLUDED.access_token,
+                refresh_token = EXCLUDED.refresh_token,
+                token_scope = EXCLUDED.token_scope,
+                token_expires_at = EXCLUDED.token_expires_at,
+                last_used_at = NOW()
             RETURNING *
             "#,
         )
