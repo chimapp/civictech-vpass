@@ -1,0 +1,11 @@
+.git
+target
+.env
+.env.*
+docs
+specs
+tests
+devenv.lock
+devenv.nix
+devenv.yaml
+docker-compose.yml

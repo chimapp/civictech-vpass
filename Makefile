@@ -15,6 +15,10 @@ check:
 build:
 	cargo build
 
+.PHONY: docker-build
+docker-build:
+	docker build -t vpass .
+
 .PHONY: test
 test:
 	cargo test $(if $(TEST),$(TEST),)
