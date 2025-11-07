@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Card - VPass{% endblock %}
+{% block title %}卡片 - VPass{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="/static/css/cards.css">
 {% endblock %}
 
 {% block content %}
-    <a href="/cards/my-cards" class="back">Back to My Cards</a>
+    <a href="/cards/my-cards" class="back">返回我的卡片</a>
 
-    <div class="status">● Active Card</div>
+    <div class="status">● 有效卡片</div>
 
     {% if let Some(qr) = wallet_qr %}
         {% let cid_present = qr.cid.is_some() %}
@@ -18,25 +18,25 @@
                 <span class="spinner-dot {% if cid_present %}is-hidden{% endif %}" data-role="spinner"></span>
                 <span class="status-text" data-role="status-text">
                     {% if cid_present %}
-                        Credential issued! ✓
+                        憑證已發行！ ✓
                     {% else %}
-                        Waiting for wallet scan...
+                        等待皮夾掃描...
                     {% endif %}
                 </span>
             </div>
             <div class="status-details">
                 <p class="status-instructions">
                     {% if cid_present %}
-                        Credential is ready in your Taiwan Digital Wallet.
+                        憑證已在您的數位皮夾中準備就緒。
                     {% else %}
-                        Please scan the QR code with the Taiwan Digital Wallet app.
+                        請使用數位皮夾應用程式掃描 QR Code。
                     {% endif %}
                 </p>
                 <p class="poll-info" data-role="poll-info">
                     {% if cid_present %}
-                        Credential is ready.
+                        憑證已準備就緒。
                     {% else %}
-                        Checking status...
+                        檢查狀態中...
                     {% endif %}
                 </p>
             </div>
@@ -49,33 +49,33 @@
         {% if let Some(qr) = wallet_qr %}
             {% if qr.cid.is_none() %}
                 <div class="qr-code">
-                    <img src="{{ qr.qr_code }}" alt="Taiwan Digital Wallet QR Code" />
+                    <img src="{{ qr.qr_code }}" alt="數位皮夾 QR Code" />
                 </div>
-                <div class="scan-instruction">Scan with Taiwan Digital Wallet</div>
+                <div class="scan-instruction">使用數位皮夾掃描</div>
             {% else %}
                 <div class="qr-code placeholder">
                     <div class="placeholder-icon">✓</div>
-                    <div class="placeholder-text">Credential already issued</div>
+                    <div class="placeholder-text">憑證已發行</div>
                 </div>
             {% endif %}
         {% else %}
             <div class="qr-code placeholder">
-                <div class="placeholder-text">QR code not available</div>
+                <div class="placeholder-text">QR Code 無法使用</div>
             </div>
         {% endif %}
     </div>
 
     <div class="info-grid">
         <div class="info-item">
-            <div class="info-label">Confirmed</div>
+            <div class="info-label">已確認</div>
             <div class="info-value">{{ card.membership_confirmed_at.format("%Y-%m-%d %H:%M UTC") }}</div>
         </div>
         <div class="info-item">
-            <div class="info-label">Issued</div>
+            <div class="info-label">已發行</div>
             <div class="info-value">{{ card.issued_at.format("%Y-%m-%d %H:%M UTC") }}</div>
         </div>
         <div class="info-item" style="grid-column: 1 / -1;">
-            <div class="info-label">Card ID</div>
+            <div class="info-label">卡片 ID</div>
             <div class="info-value">{{ card.id }}</div>
         </div>
     </div>
@@ -84,12 +84,12 @@
         {% if wallet_qr.is_some() && wallet_qr.as_ref().unwrap().cid.is_none() %}
             {% if let Some(qr) = wallet_qr %}
                 {% if let Some(deep_link) = qr.deep_link.as_deref() %}
-                    <a href="{{ deep_link }}" class="button">Open in Taiwan Wallet App</a>
+                    <a href="{{ deep_link }}" class="button">在數位皮夾應用程式中開啟</a>
                 {% endif %}
             {% endif %}
         {% endif %}
-        <a href="/cards/my-cards" class="button secondary">View All Cards</a>
-        <button type="button" class="button danger" data-delete-card="{{ card.id }}">Delete Card</button>
+        <a href="/cards/my-cards" class="button secondary">查看所有卡片</a>
+        <button type="button" class="button danger" data-delete-card="{{ card.id }}">刪除卡片</button>
     </div>
 {% endblock %}
 

@@ -7,38 +7,38 @@
 {% endblock %}
 
 {% block content %}
-    <a href="/events" class="back">Back to Events</a>
+    <a href="/events" class="back">返回活動</a>
 
     <div class="header">
         <h1>{{ event.event_name }}</h1>
-        <p class="subtitle">Event Details</p>
+        <p class="subtitle">活動詳情</p>
     </div>
 
     <div class="event-details">
-        <p><strong>Channel:</strong> {{ issuer.channel_name }}</p>
-        <p><strong>Date:</strong> {{ event.event_date }}</p>
+        <p><strong>頻道：</strong> {{ issuer.channel_name }}</p>
+        <p><strong>日期：</strong> {{ event.event_date }}</p>
         {% match event.event_location %}
             {% when Some with (loc) %}
-                <p><strong>Location:</strong> {{ loc }}</p>
+                <p><strong>地點：</strong> {{ loc }}</p>
             {% when None %}
         {% endmatch %}
         {% match event.event_description %}
             {% when Some with (desc) %}
-                <p><strong>Description:</strong> {{ desc }}</p>
+                <p><strong>描述：</strong> {{ desc }}</p>
             {% when None %}
         {% endmatch %}
     </div>
 
     <div class="event-stats">
-        <h2>Verification Stats</h2>
-        <p>Total Scans: {{ stats.total_scans }}</p>
-        <p>Successful: {{ stats.successful_scans }}</p>
-        <p>Failed: {{ stats.failed_scans }}</p>
-        <p>Unique Cards: {{ stats.unique_cards }}</p>
+        <h2>驗證統計</h2>
+        <p>總掃描次數： {{ stats.total_scans }}</p>
+        <p>成功： {{ stats.successful_scans }}</p>
+        <p>失敗： {{ stats.failed_scans }}</p>
+        <p>唯一卡片： {{ stats.unique_cards }}</p>
     </div>
 
     <div class="actions" style="margin-top: 40px; display: flex; gap: 16px;">
-        <a href="/verify/{{ event.id }}/scanner" class="button">Start Scanner</a>
-        <a href="/verify/{{ event.id }}/history" class="button">View History</a>
+        <a href="/verify/{{ event.id }}/scanner" class="button">開始掃描器</a>
+        <a href="/verify/{{ event.id }}/history" class="button">查看歷史記錄</a>
     </div>
 {% endblock %}

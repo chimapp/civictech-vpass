@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}My Cards - VPass{% endblock %}
+{% block title %}我的卡片 - VPass{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="/static/css/cards-list.css">
 {% endblock %}
 
 {% block content %}
-    <a href="/" class="back">Back to Dashboard</a>
+    <a href="/" class="back">返回</a>
 
     <div class="header">
-        <h1>My Cards</h1>
-        <p class="subtitle">Membership Collection</p>
+        <h1>我的卡片</h1>
+        <p class="subtitle">會員收藏</p>
     </div>
 
     {% if let Some(msg) = success_message %}
@@ -20,8 +20,8 @@
 
     {% if cards.is_empty() %}
         <div class="empty">
-            <p>You don't have any cards yet.</p>
-            <a href="/issuers" class="button">Browse Channels</a>
+            <p>您還沒有任何卡片。</p>
+            <a href="/issuers" class="button">瀏覽頻道</a>
         </div>
     {% else %}
         <div class="cards">
@@ -30,11 +30,11 @@
                     <div class="card-level">{{ card.membership_level_label }}</div>
                     <div class="card-dates">
                         <div class="date-item">
-                            <span class="label">Confirmed</span>
+                            <span class="label">已確認</span>
                             <span class="value">{{ card.membership_confirmed_at.format("%Y-%m-%d") }}</span>
                         </div>
                         <div class="date-item">
-                            <span class="label">Issued</span>
+                            <span class="label">已發行</span>
                             <span class="value">{{ card.issued_at.format("%Y-%m-%d") }}</span>
                         </div>
                     </div>

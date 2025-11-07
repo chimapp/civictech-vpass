@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Claim Card - VPass{% endblock %}
+{% block title %}領取卡片 - VPass{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="/static/css/claim.css">
 {% endblock %}
 
 {% block content %}
-    <a href="/issuers" class="back">Back to Channels</a>
+    <a href="/issuers" class="back">返回</a>
 
     <div class="header">
-        <h1>Claim Card</h1>
-        <p class="subtitle">Membership Verification</p>
+        <h1>領取卡片</h1>
+        <p class="subtitle">會員驗證</p>
     </div>
 
     <div class="channel-info">
@@ -22,51 +22,51 @@
     {% match is_authenticated %}
         {% when false %}
         <div class="info-box" style="background-color: #F5F3ED; padding: 40px; margin-bottom: 40px; border-left: 4px solid #B8915F;">
-            <h2 style="font-size: 24px; font-weight: 400; margin-bottom: 24px; color: #1E3A5F;">👋 Almost there!</h2>
+            <h2 style="font-size: 24px; font-weight: 400; margin-bottom: 24px; color: #1E3A5F;">👋 快完成了！</h2>
 
             <p style="margin-bottom: 24px; line-height: 1.6; color: #000;">
-                To claim your membership card for <strong>{{ issuer.channel_name }}</strong>, you'll need to:
+                要領取 <strong>{{ issuer.channel_name }}</strong> 的會員卡片，您需要：
             </p>
 
             <ol style="margin-left: 20px; margin-bottom: 32px; line-height: 1.8; color: #000;">
                 <li style="margin-bottom: 12px;">
-                    <strong>Log in with your YouTube account</strong><br>
-                    <span style="color: #666; font-size: 14px;">(so we can verify you're a real member)</span>
+                    <strong>使用您的 YouTube 帳號登入</strong><br>
+                    <span style="color: #666; font-size: 14px;">（以便我們驗證您是真實會員）</span>
                 </li>
                 <li style="margin-bottom: 12px;">
-                    <strong>Post a comment on the verification video</strong><br>
-                    <span style="color: #666; font-size: 14px;">(any text works - it's just to confirm membership timing)</span>
+                    <strong>在驗證影片下留言</strong><br>
+                    <span style="color: #666; font-size: 14px;">（任何文字都可以 - 只是為了確認會員身份）</span>
                 </li>
                 <li style="margin-bottom: 12px;">
-                    <strong>Come back here and paste your comment URL</strong><br>
-                    <span style="color: #666; font-size: 14px;">(we'll verify it and issue your card)</span>
+                    <strong>回到這裡並貼上您的留言網址</strong><br>
+                    <span style="color: #666; font-size: 14px;">（我們會驗證並發行您的卡片）</span>
                 </li>
             </ol>
 
-            <p style="margin-bottom: 24px; color: #000; font-weight: 500;">Ready?</p>
+            <p style="margin-bottom: 24px; color: #000; font-weight: 500;">準備好了嗎？</p>
 
             <a href="/auth/youtube/login?return_url=/channels/{{ issuer_id }}/claim" class="button" style="display: inline-block; width: auto; padding: 16px 32px; background: #1E3A5F; color: #fff; text-decoration: none; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; transition: background 0.2s;">
-                Log in with YouTube
+                使用 YouTube 登入
             </a>
         </div>
         {% when true %}
         <div class="info-box">
-            <h2>Instructions</h2>
+            <h2>操作說明</h2>
             <ol>
-                <li>Go to the channel's members-only verification video</li>
-                <li>Post a comment (any text is fine)</li>
-                <li>Copy the comment URL or ID</li>
-                <li>Paste it below and submit</li>
+                <li>前往該頻道的會員專屬驗證影片</li>
+                <li>留下評論（任何文字都可以）</li>
+                <li>複製留言網址</li>
+                <li>在下方貼上並送出</li>
             </ol>
         </div>
 
         <form action="/channels/{{ issuer.id }}/claim" method="POST">
             <div class="form-group">
-                <label for="comment_link">Comment URL or ID</label>
+                <label for="comment_link">留言網址或 ID</label>
                 <input type="text" name="comment_link" id="comment_link" required
                        placeholder="https://www.youtube.com/watch?v=...&lc=...">
             </div>
-            <button type="submit">Issue Card</button>
+            <button type="submit">發行卡片</button>
         </form>
     {% endmatch %}
 {% endblock %}

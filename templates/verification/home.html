@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Verification{% endblock %}
+{% block title %}驗證{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1>Select Event to Verify</h1>
+    <h1>選擇要驗證的活動</h1>
 
     <div class="events-list">
         {% if events.is_empty() %}
-            <p>No active events found.</p>
+            <p>找不到有效的活動。</p>
         {% else %}
             <ul>
                 {% for event in events %}

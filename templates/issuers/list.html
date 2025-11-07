@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Card Issuers - VPass{% endblock %}
+{% block title %}卡片發行者 - VPass{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="/static/css/issuers.css">
@@ -8,14 +8,14 @@
 
 {% block content %}
     <div class="header">
-        <h1>Card Issuers</h1>
-        <a href="/issuers/new" class="btn btn-primary">Create Issuer</a>
+        <h1>卡片發行者</h1>
+        <a href="/issuers/new" class="btn btn-primary">建立發行者</a>
     </div>
 
     {% if issuers.is_empty() %}
         <div class="empty">
-            <p>No issuers yet.</p>
-            <a href="/issuers/new" class="btn btn-primary">Create First Issuer</a>
+            <p>尚無發行者。</p>
+            <a href="/issuers/new" class="btn btn-primary">建立第一個發行者</a>
         </div>
     {% else %}
         <div class="issuers">
@@ -24,37 +24,37 @@
                     <div class="issuer-header">
                         <h3>{{ issuer.channel_name }}</h3>
                         <span class="status {% if issuer.is_active %}active{% else %}inactive{% endif %}">
-                            {% if issuer.is_active %}Active{% else %}Inactive{% endif %}
+                            {% if issuer.is_active %}啟用中{% else %}停用中{% endif %}
                         </span>
                     </div>
                     <div class="info-grid">
                         <div class="info-item">
-                            <span class="label">Channel ID</span>
+                            <span class="label">頻道 ID</span>
                             <span class="value">{{ issuer.youtube_channel_id }}</span>
                         </div>
                         <div class="info-item">
-                            <span class="label">Handle</span>
+                            <span class="label">代號</span>
                             <span class="value">{{ issuer.channel_handle.as_deref().unwrap_or("N/A") }}</span>
                         </div>
                         <div class="info-item">
-                            <span class="label">Verification Video</span>
+                            <span class="label">驗證影片</span>
                             <span class="value">{{ issuer.verification_video_id }}</span>
                         </div>
                         <div class="info-item">
-                            <span class="label">Default Label</span>
+                            <span class="label">預設標籤</span>
                             <span class="value">{{ issuer.default_membership_label }}</span>
                         </div>
                         <div class="info-item">
-                            <span class="label">Wallet VC UID</span>
-                            <span class="value">{{ issuer.vc_uid.as_deref().unwrap_or("Not configured") }}</span>
+                            <span class="label">皮夾 VC UID</span>
+                            <span class="value">{{ issuer.vc_uid.as_deref().unwrap_or("未設定") }}</span>
                         </div>
                     </div>
                     <div class="actions">
-                        <a href="/channels/{{ issuer.id }}/claim" class="btn btn-primary">Claim Card</a>
-                        <a href="/issuers/{{ issuer.id }}/edit" class="btn btn-secondary">Edit</a>
+                        <a href="/channels/{{ issuer.id }}/claim" class="btn btn-primary">領取卡片</a>
+                        <a href="/issuers/{{ issuer.id }}/edit" class="btn btn-secondary">編輯</a>
                         <form action="/issuers/{{ issuer.id }}/toggle" method="POST" style="display: inline;">
                             <button type="submit" class="btn btn-warning">
-                                {% if issuer.is_active %}Deactivate{% else %}Activate{% endif %}
+                                {% if issuer.is_active %}停用{% else %}啟用{% endif %}
                             </button>
                         </form>
                     </div>

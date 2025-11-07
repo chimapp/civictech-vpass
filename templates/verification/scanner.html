@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Verification - {{ event.event_name }}{% endblock %}
+{% block title %}驗證 - {{ event.event_name }}{% endblock %}
 
 {% block content %}
 <div class="container" style="max-width: 800px; margin: 0 auto; padding: 40px 20px;">
-    <a href="/verify" class="back" style="display: inline-block; margin-bottom: 20px;">&larr; Back to Events</a>
+    <a href="/verify" class="back" style="display: inline-block; margin-bottom: 20px;">&larr; 返回活動</a>
 
     <div class="header">
         <h1>{{ event.event_name }}</h1>
@@ -12,18 +12,18 @@
     </div>
 
     <div id="instructions" style="background: #f5f3ed; padding: 24px; border-radius: 8px; margin: 32px 0;">
-        <h3 style="margin-top: 0;">How to Verify Membership</h3>
+        <h3 style="margin-top: 0;">如何驗證會員身份</h3>
         <ol style="line-height: 1.8;">
-            <li>Open <strong>Taiwan Digital Wallet</strong> app on your phone</li>
-            <li>Show the QR code below to attendees</li>
-            <li>Ask them to scan it with their wallet app</li>
-            <li>Wait for verification result to appear</li>
+            <li>在手機上開啟<strong>數位皮夾</strong>應用程式</li>
+            <li>向參與者展示下方的 QR Code</li>
+            <li>請他們使用數位皮夾應用程式掃描</li>
+            <li>等待驗證結果出現</li>
         </ol>
     </div>
 
     <div id="qr-container" style="text-align: center; margin: 40px 0;">
         <div id="loading" style="padding: 60px;">
-            <p style="font-size: 18px;">Generating QR code...</p>
+            <p style="font-size: 18px;">產生 QR Code 中...</p>
         </div>
 
         <div id="qr-display" style="display: none;">
@@ -32,11 +32,11 @@
             </div>
 
             <div id="timer" style="margin-top: 24px; font-size: 16px; color: #666;">
-                Expires in: <span id="countdown" style="font-weight: 700; color: #1e3a5f;">5:00</span>
+                到期時間： <span id="countdown" style="font-weight: 700; color: #1e3a5f;">5:00</span>
             </div>
 
             <button id="refresh-btn" onclick="requestNewQR()" style="margin-top: 24px; padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; display: none;">
-                Generate New QR Code
+                產生新的 QR Code
             </button>
         </div>
     </div>
@@ -44,41 +44,41 @@
     <div id="result-container" style="margin-top: 40px;">
         <div id="pending-status" style="display: none; text-align: center; padding: 32px; background: #e8f4fd; border-radius: 8px;">
             <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
-            <h3 style="margin: 0 0 8px 0;">Waiting for scan...</h3>
-            <p style="margin: 0; color: #666;">Ask the attendee to scan the QR code</p>
+            <h3 style="margin: 0 0 8px 0;">等待掃描中...</h3>
+            <p style="margin: 0; color: #666;">請參與者掃描 QR Code</p>
         </div>
 
         <div id="success-result" style="display: none; padding: 32px; background: #d4edda; border: 2px solid #28a745; border-radius: 8px;">
             <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">✅</div>
-            <h3 style="margin: 0 0 16px 0; text-align: center; color: #155724;">Verification Successful!</h3>
+            <h3 style="margin: 0 0 16px 0; text-align: center; color: #155724;">驗證成功！</h3>
             <div id="member-info" style="background: white; padding: 20px; border-radius: 4px; margin-top: 16px;"></div>
             <button onclick="requestNewQR()" style="margin-top: 24px; padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; width: 100%;">
-                Verify Next Person
+                驗證下一位
             </button>
         </div>
 
         <div id="failed-result" style="display: none; padding: 32px; background: #f8d7da; border: 2px solid #dc3545; border-radius: 8px;">
             <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">❌</div>
-            <h3 style="margin: 0 0 16px 0; text-align: center; color: #721c24;">Verification Failed</h3>
+            <h3 style="margin: 0 0 16px 0; text-align: center; color: #721c24;">驗證失敗</h3>
             <p id="error-message" style="text-align: center; margin: 0;"></p>
             <button onclick="requestNewQR()" style="margin-top: 24px; padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; width: 100%;">
-                Try Again
+                再試一次
             </button>
         </div>
 
         <div id="expired-result" style="display: none; padding: 32px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px;">
             <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">⏰</div>
-            <h3 style="margin: 0 0 16px 0; text-align: center;">QR Code Expired</h3>
-            <p style="text-align: center; margin: 0 0 24px 0;">QR codes expire after 5 minutes for security.</p>
+            <h3 style="margin: 0 0 16px 0; text-align: center;">QR Code 已過期</h3>
+            <p style="text-align: center; margin: 0 0 24px 0;">為了安全，QR Code 會在 5 分鐘後過期。</p>
             <button onclick="requestNewQR()" style="padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; width: 100%;">
-                Generate New QR Code
+                產生新的 QR Code
             </button>
         </div>
     </div>
 
     <div style="margin-top: 48px; text-align: center;">
         <a href="/verify/{{ event.id }}/history" style="color: #1e3a5f; text-decoration: none; font-size: 16px;">
-            📊 View Verification History
+            📊 查看驗證歷史記錄
         </a>
     </div>
 </div>
@@ -140,10 +140,10 @@ async function requestNewQR() {
     } catch (error) {
         console.error('Failed to request QR code:', error);
         document.getElementById('loading').innerHTML = `
-            <p style="color: #dc3545;">Failed to generate QR code</p>
+            <p style="color: #dc3545;">無法產生 QR Code</p>
             <p style="font-size: 14px; color: #666;">${error.message}</p>
             <button onclick="requestNewQR()" style="margin-top: 16px; padding: 12px 24px; background: #b8915f; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                Retry
+                重試
             </button>
         `;
     }
@@ -210,7 +210,7 @@ function displayResult(result) {
         // Display member info if available
         if (result.member_info) {
             const memberInfoDiv = document.getElementById('member-info');
-            memberInfoDiv.innerHTML = '<h4 style="margin-top: 0;">Member Information:</h4>';
+            memberInfoDiv.innerHTML = '<h4 style="margin-top: 0;">會員資訊：</h4>';
 
             for (const [key, value] of Object.entries(result.member_info)) {
                 if (key !== 'credentialType') {

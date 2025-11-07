@@ -10,37 +10,37 @@
     <div class="full-height">
         {% if is_authenticated %}
             <h1>VPass</h1>
-            <p class="subtitle">Channel Membership Verification</p>
+            <p class="subtitle">頻道會員驗證</p>
 
-            <div class="status-bar">● Dashboard</div>
+            <div class="status-bar">● 控制台</div>
 
             <div class="menu">
-                <a href="/cards/my-cards" class="button">My Cards</a>
-                <a href="/issuers" class="button">Browse Channels</a>
-                <a href="/events" class="button">Events</a>
-                <a href="/verify" class="button">Verify Scanner</a>
+                <a href="/cards/my-cards" class="button">我的卡片</a>
+                <a href="/issuers" class="button">瀏覽頻道</a>
+                <a href="/events" class="button">活動</a>
+                <a href="/verify" class="button">驗證掃描器</a>
             </div>
             <form action="/auth/logout" method="POST" style="margin: 0;">
-                <button type="submit" class="button danger">Logout</button>
+                <button type="submit" class="button danger">登出</button>
             </form>
 
             <div class="footer">
-                <p>You are logged in to VPass</p>
+                <p>您已登入 VPass</p>
             </div>
         {% else %}
             <h1>VPass</h1>
-            <p class="subtitle">Channel Membership Verification</p>
+            <p class="subtitle">頻道會員驗證</p>
 
             <div class="auth-section">
-                <p class="auth-prompt">Sign in with your YouTube account to get started</p>
+                <p class="auth-prompt">使用您的 YouTube 帳號登入以開始使用</p>
 
                 <div class="menu">
-                    <a href="/auth/youtube/login" class="button">Sign in with YouTube</a>
+                    <a href="/auth/youtube/login" class="button">使用 YouTube 登入</a>
                 </div>
             </div>
 
             <div class="footer">
-                <p>Verify your channel membership with a digital card</p>
+                <p>使用數位卡片驗證您的頻道會員身份</p>
             </div>
         {% endif %}
     </div>

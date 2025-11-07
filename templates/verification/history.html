@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}Verification History - {{ event.event_name }}{% endblock %}
+{% block title %}驗證歷史記錄 - {{ event.event_name }}{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h1>Verification History</h1>
+    <h1>驗證歷史記錄</h1>
     <h2>{{ event.event_name }} - {{ issuer.channel_name }}</h2>
 
     <table>
         <thead>
             <tr>
-                <th>Time</th>
-                <th>Result</th>
-                <th>Member</th>
-                <th>Card ID</th>
+                <th>時間</th>
+                <th>結果</th>
+                <th>會員</th>
+                <th>卡片 ID</th>
             </tr>
         </thead>
         <tbody>
@@ -45,13 +45,13 @@
     </table>
 
     <div class="pagination">
-        Page {{ page }} of {{ (total + per_page - 1) / per_page }}
+        第 {{ page }} 頁，共 {{ (total + per_page - 1) / per_page }} 頁
         <br>
         {% if page > 1 %}
-            <a href="?page={{ page - 1 }}">Previous</a>
+            <a href="?page={{ page - 1 }}">上一頁</a>
         {% endif %}
         {% if page * per_page < total %}
-            <a href="?page={{ page + 1 }}">Next</a>
+            <a href="?page={{ page + 1 }}">下一頁</a>
         {% endif %}
     </div>
 </div>
