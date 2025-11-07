@@ -45,6 +45,10 @@ pub enum VerificationResult {
         card: MembershipCard,
         issuer: CardIssuer,
     },
+    CardDeleted {
+        card: MembershipCard,
+        issuer: CardIssuer,
+    },
     InvalidPayload {
         error: String,
     },
@@ -59,6 +63,7 @@ impl VerificationResult {
             VerificationResult::CardExpired { .. } => "card_expired",
             VerificationResult::CardRevoked { .. } => "card_revoked",
             VerificationResult::CardSuspended { .. } => "card_suspended",
+            VerificationResult::CardDeleted { .. } => "card_deleted",
             VerificationResult::InvalidPayload { .. } => "invalid_payload",
         }
     }
@@ -71,6 +76,7 @@ impl VerificationResult {
             VerificationResult::CardExpired { card, .. } => Some(card.id),
             VerificationResult::CardRevoked { card, .. } => Some(card.id),
             VerificationResult::CardSuspended { card, .. } => Some(card.id),
+            VerificationResult::CardDeleted { card, .. } => Some(card.id),
             VerificationResult::InvalidPayload { .. } => None,
         }
     }
@@ -157,6 +163,10 @@ pub async fn verify_qr_payload(
         CardStatus::Suspended => {
             tracing::info!(card_id = %card.id, "Card suspended");
             VerificationResult::CardSuspended { card, issuer }
+        }
+        CardStatus::Deleted => {
+            tracing::info!(card_id = %card.id, "Card deleted");
+            VerificationResult::CardDeleted { card, issuer }
         }
     };
 
