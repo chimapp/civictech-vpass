@@ -3,9 +3,6 @@
 **/*.rs.bk
 *.pdb
 
-# Cargo lock (keep for binary projects)
-Cargo.lock
-
 # Environment
 .env
 .env.local
