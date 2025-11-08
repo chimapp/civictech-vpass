@@ -31,12 +31,17 @@ coverage:
 psql:
 	psql "postgresql://postgres:password@localhost:5432/vpass_dev"
 
+SQLX_CLI_STAMP := .sqlx-cli-rustls.stamp
+$(SQLX_CLI_STAMP):
+	cargo install sqlx-cli --locked --force --no-default-features --features "postgres,rustls"
+	touch $@
+
 .PHONY: migrate
-migrate:
+migrate: $(SQLX_CLI_STAMP)
 	cargo sqlx migrate run
 
 .PHONY: migrate-add
-migrate-add:
+migrate-add: $(SQLX_CLI_STAMP)
 	@if [ -z "$(NAME)" ]; then \
 		echo "Usage: make migrate-add NAME=migration_name"; \
 		exit 1; \
@@ -44,5 +49,5 @@ migrate-add:
 	cargo sqlx migrate add $(NAME)
 
 .PHONY: migrate-revert
-migrate-revert:
+migrate-revert: $(SQLX_CLI_STAMP)
 	cargo sqlx migrate revert

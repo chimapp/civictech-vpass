@@ -28,6 +28,7 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+.sqlx-cli-rustls.stamp
 
 # Devenv
 .devenv*
