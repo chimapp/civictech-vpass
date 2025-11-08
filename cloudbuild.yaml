@@ -45,6 +45,7 @@ steps:
           --region=$_DEPLOY_REGION \
           --platform=$_PLATFORM \
           --allow-unauthenticated \
+          --add-cloudsql-instances=$PROJECT_ID:$_DEPLOY_REGION:vpass-db \
           --image=$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA \
           --env-vars-file=secrets/.prod.env
 
