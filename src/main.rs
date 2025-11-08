@@ -67,7 +67,9 @@ async fn main() -> anyhow::Result<()> {
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], config.port));
+    let addr: SocketAddr = format!("{}:{}", config.host, config.port)
+        .parse()
+        .expect("Failed to parse HOST and PORT into SocketAddr");
     tracing::info!("Listening on {}", addr);
 
     // Start server

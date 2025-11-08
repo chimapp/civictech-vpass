@@ -5,6 +5,7 @@ use serde::Deserialize;
 pub struct Config {
     pub database_url: String,
     pub base_url: String,
+    pub host: String,
     pub port: u16,
 
     // YouTube OAuth
@@ -39,6 +40,7 @@ impl Config {
         Ok(Self {
             database_url: config.get("database_url")?,
             base_url: config.get("base_url")?,
+            host: config.get("host").unwrap_or_else(|_| "127.0.0.1".to_string()),
             port: config.get("port")?,
 
             youtube_client_id: config.get("youtube_client_id")?,
