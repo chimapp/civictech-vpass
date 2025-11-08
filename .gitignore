@@ -7,6 +7,12 @@
 .env
 .env.local
 
+# Decrypted secrets (managed via SOPS)
+secrets/*.env
+secrets/*.dec
+secrets/*.plain
+secrets/*.tmp
+
 # IDE
 .vscode/
 .idea/

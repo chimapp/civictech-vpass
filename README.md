@@ -78,6 +78,23 @@ See [CLAUDE.md](CLAUDE.md) for complete project structure and development guidel
 
 See [CLAUDE.md](CLAUDE.md#common-commands) for all available development commands using Make or cargo.
 
+## Secrets Management
+
+Production `.env` files live in `secrets/*.env.enc` and are encrypted
+with [SOPS](https://github.com/getsops/sops) using the Cloud KMS key configured
+in `.sops.yaml`. The workflow is:
+
+- Create the key ring/key once (see `secrets/README.md` for commands).
+- Run `sops secrets/prod.env.enc` to edit secrets in place; the file stays
+  encrypted in git.
+- Use `scripts/decrypt-env.sh prod` whenever you need the plaintext locally; the
+  result (`secrets/.prod.env`) is git-ignored.
+- In Cloud Build, grant the build service account `roles/cloudkms.cryptoKeyDecrypter`
+  and add a step that decrypts `secrets/prod.env.enc` before the deploy step so
+  you can push the values into Secret Manager or `gcloud run deploy`.
+
+Refer to `secrets/README.md` for detailed instructions and sample commands.
+
 ## License
 
 TBD

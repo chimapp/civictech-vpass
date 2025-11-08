@@ -1,0 +1,5 @@
+# Manage encrypted configuration with Mozilla SOPS.
+# Files that match the path regex will be encrypted using the GCP KMS key below.
+creation_rules:
+  - path_regex: secrets/.*\.(env|yaml|json)(\.enc)?$
+    gcp_kms: projects/vpass-477522/locations/asia-east1/keyRings/vpass-secrets/cryptoKeys/app-config
