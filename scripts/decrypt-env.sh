@@ -7,6 +7,7 @@ if ! command -v sops >/dev/null 2>&1; then
 fi
 
 ENVIRONMENT="${1:-prod}"
+FORMAT="${2:-dotenv}"
 ENC_FILE="secrets/${ENVIRONMENT}.env.enc"
 OUT_FILE="secrets/.${ENVIRONMENT}.env"
 
@@ -16,6 +17,9 @@ if [[ ! -f "${ENC_FILE}" ]]; then
 fi
 
 umask 177
-sops --decrypt "${ENC_FILE}" > "${OUT_FILE}"
+sops --decrypt \
+  --input-type "${FORMAT}" \
+  --output-type "${FORMAT}" \
+  "${ENC_FILE}" > "${OUT_FILE}"
 echo "Decrypted environment written to ${OUT_FILE}"
 echo "Remember to securely remove the file when finished."

@@ -32,7 +32,7 @@ steps:
     args:
       - -c
       - |
-        sops --decrypt secrets/prod.env.enc > secrets/.prod.env
+        sops --decrypt --input-type dotenv --output-type dotenv secrets/prod.env.enc > secrets/.prod.env
 
   - id: Deploy
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim

@@ -36,20 +36,20 @@ nothing else is required. The path must match the entry in `.sops.yaml`.
 3. Encrypt it:
 
 ```bash
-cp .env secrets/prod.env
-sops --encrypt --in-place secrets/prod.env
-mv secrets/prod.env secrets/prod.env.enc
+cp .env secrets/prod.env.enc
+sops --encrypt --input-type dotenv --output-type dotenv --in-place secrets/prod.env.enc
 ```
 
-After the first encryption you can simply run `sops secrets/prod.env.enc` to
-edit the file in place; it will decrypt into your editor and re-encrypt on save.
+After the first encryption you can simply run
+`sops --input-type dotenv --output-type dotenv secrets/prod.env.enc` to edit the
+file in place; it will decrypt into your editor and re-encrypt on save.
 
 ## 3. Decrypt for local use
 
 When you need the secrets locally:
 
 ```bash
-scripts/decrypt-env.sh prod
+scripts/decrypt-env.sh prod        # add a second argument for other formats
 source secrets/.prod.env
 ```
 
@@ -62,7 +62,7 @@ During CI/CD, the Cloud Build service account must have
 `roles/cloudkms.cryptoKeyDecrypter` on the KMS key. The build step can then run:
 
 ```bash
-sops --decrypt secrets/prod.env.enc > secrets/.prod.env
+sops --decrypt --input-type dotenv --output-type dotenv secrets/prod.env.enc > secrets/.prod.env
 ```
 
 Use the decrypted values to update Secret Manager or to pass `--set-env-vars`
