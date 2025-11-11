@@ -41,6 +41,37 @@ pub struct WalletQrResponse {
     pub deep_link: String,
 }
 
+/// Checks if the wallet API is available
+/// Returns Ok(()) if the API is reachable, otherwise returns an error
+#[tracing::instrument(skip(api_base_url, access_token))]
+pub async fn check_wallet_health(
+    api_base_url: &str,
+    access_token: &str,
+) -> Result<(), WalletQrError> {
+    let client = Client::new();
+    let base = api_base_url.trim_end_matches('/');
+
+    // Simple health check: try to hit the base API endpoint
+    let url = format!("{}/api/qrcode/data", base);
+
+    // Use HEAD request if available, otherwise use a minimal POST
+    let response = client
+        .head(&url)
+        .header("Access-Token", access_token)
+        .timeout(std::time::Duration::from_secs(3))
+        .send()
+        .await?;
+
+    if response.status().is_server_error() {
+        return Err(WalletQrError::ApiError(format!(
+            "Wallet API unavailable: HTTP {}",
+            response.status()
+        )));
+    }
+
+    Ok(())
+}
+
 /// Generates a QR code data for Taiwan Digital Wallet
 ///
 /// This function calls the Taiwan Digital Wallet API to generate QR code data

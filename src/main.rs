@@ -56,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Build router
     let app = Router::new()
-        .route("/health", get(|| async { "OK" }))
+        .route("/health", get(vpass::api::health::health_check))
         .merge(vpass::api::auth::router())
         .merge(vpass::api::cards::router())
         .merge(vpass::api::issuers::router())

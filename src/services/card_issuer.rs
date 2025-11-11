@@ -6,7 +6,6 @@ use crate::models::{
     card::{CreateCardData, MembershipCard},
     issuer::CardIssuer,
     member::{CreateMemberData, Member},
-    wallet_qr_code::{CreateWalletQrCodeData, WalletQrCode},
 };
 use crate::services::comment_verifier;
 
@@ -21,11 +20,14 @@ pub enum CardIssuanceError {
     #[error("Wallet QR generation failed: {0}")]
     WalletQrGeneration(#[from] crate::services::wallet_qr::WalletQrError),
 
+    #[error("Taiwan Digital Wallet service unavailable. Please try again later.")]
+    WalletServiceUnavailable,
+
     #[error("Issuer not found")]
     IssuerNotFound,
 
-    #[error("Duplicate card exists for this member")]
-    DuplicateCard,
+    #[error("Active card already exists. {0}")]
+    DuplicateCard(String),
 
     #[error("Invalid comment ID format")]
     InvalidCommentId,
@@ -52,7 +54,6 @@ pub struct IssueCardRequest {
 pub struct IssueCardResult {
     pub card: MembershipCard,
     pub member: Member,
-    pub wallet_qr: WalletQrCode,
 }
 
 /// Issues a new membership card
@@ -71,7 +72,20 @@ pub async fn issue_card(
     issuer_api_config: Option<(&str, &str)>, // (api_base_url, access_token)
     request: IssueCardRequest,
 ) -> Result<IssueCardResult, CardIssuanceError> {
+    use std::time::Instant;
+    let start_time = Instant::now();
+
     tracing::info!("Starting card issuance process");
+
+    // 0. Early wallet API health check (FR-008a: fail fast if wallet unavailable)
+    let (api_base_url, access_token) =
+        issuer_api_config.ok_or(CardIssuanceError::IssuerApiNotConfigured)?;
+
+    crate::services::wallet_qr::check_wallet_health(api_base_url, access_token)
+        .await
+        .map_err(|_| CardIssuanceError::WalletServiceUnavailable)?;
+
+    tracing::debug!("Wallet API health check passed");
 
     // 1. Load and validate issuer
     let issuer = CardIssuer::find_by_id(pool, request.issuer_id)
@@ -111,20 +125,22 @@ pub async fn issue_card(
         "Extracted comment and video ID from URL"
     );
 
-    // 3. Verify the comment
+    // 3. Verify the comment (no age restriction per FR-003)
+    let youtube_start = Instant::now();
     let verification_result = comment_verifier::verify_comment(
         &comment_id,
         &issuer.verification_video_id,
         &request.member_youtube_user_id,
-        request.session_started_at,
         &request.access_token,
     )
     .await?;
+    let youtube_duration = youtube_start.elapsed();
 
     tracing::info!(
         comment_id = %verification_result.comment_id,
         author = %verification_result.author_display_name,
         published_at = %verification_result.published_at,
+        youtube_api_duration_ms = youtube_duration.as_millis(),
         "Comment verified successfully"
     );
 
@@ -142,11 +158,16 @@ pub async fn issue_card(
 
     tracing::debug!(member_id = %member.id, "Member record created/updated");
 
-    // 5. Check for duplicate active cards
-    let existing_card = MembershipCard::find_active_for_member(pool, issuer.id, member.id).await?;
+    // 5. Check for duplicate active unexpired cards (FR-006 + FR-006a)
+    let existing_cards = MembershipCard::find_active_unexpired_cards(pool, issuer.id, member.id).await?;
 
-    if existing_card.is_some() {
-        return Err(CardIssuanceError::DuplicateCard);
+    if let Some(existing_card) = existing_cards.first() {
+        let expires_info = existing_card
+            .expires_at
+            .map(|e| format!("Expires: {}", e.format("%Y-%m-%d")))
+            .unwrap_or_else(|| "No expiration".to_string());
+
+        return Err(CardIssuanceError::DuplicateCard(expires_info));
     }
 
     // 6. Create snapshot for auditing
@@ -166,11 +187,7 @@ pub async fn issue_card(
         },
     });
 
-    // 7. Validate issuer API configuration
-    let (api_base_url, access_token) =
-        issuer_api_config.ok_or(CardIssuanceError::IssuerApiNotConfigured)?;
-
-    // 8. Validate issuer has vc_uid configured
+    // 7. Validate issuer has vc_uid configured (api_base_url and access_token already extracted)
     let vc_uid = issuer
         .vc_uid
         .as_ref()
@@ -178,6 +195,7 @@ pub async fn issue_card(
 
     // 9. Generate Taiwan Digital Wallet QR code
     tracing::debug!("Generating Taiwan Digital Wallet QR code");
+    let wallet_start = Instant::now();
 
     // Sanitize display name: Taiwan Digital Wallet only allows Chinese, English, numbers, and underscore
     let sanitized_name = verification_result
@@ -200,8 +218,12 @@ pub async fn issue_card(
     let wallet_qr_response =
         crate::services::wallet_qr::generate_wallet_qr(api_base_url, access_token, vc_uid, fields)
             .await?;
+    let wallet_duration = wallet_start.elapsed();
 
-    tracing::info!("Wallet QR code generated successfully");
+    tracing::info!(
+        wallet_api_duration_ms = wallet_duration.as_millis(),
+        "Wallet QR code generated successfully"
+    );
 
     // 10. Store the card
     let card = MembershipCard::create(
@@ -218,29 +240,54 @@ pub async fn issue_card(
     )
     .await?;
 
-    tracing::info!(card_id = %card.id, "Card created successfully");
+    tracing::info!(
+        card_id = %card.id,
+        expires_at = %card.expires_at.map(|e| e.to_rfc3339()).unwrap_or_else(|| "never".to_string()),
+        "Card created successfully"
+    );
 
-    // 11. Create wallet QR code record
-    let wallet_qr = WalletQrCode::create(
+    // 11. Store wallet QR data on the card
+    MembershipCard::set_wallet_qr(
         pool,
-        CreateWalletQrCodeData {
-            card_id: card.id,
-            transaction_id: wallet_qr_response.transaction_id,
-            qr_code: wallet_qr_response.qr_code,
-            deep_link: Some(wallet_qr_response.deep_link),
-        },
+        card.id,
+        wallet_qr_response.transaction_id.clone(),
+        wallet_qr_response.qr_code,
+        Some(wallet_qr_response.deep_link),
     )
     .await?;
 
     tracing::info!(
-        wallet_qr_id = %wallet_qr.id,
-        transaction_id = %wallet_qr.transaction_id,
-        "Wallet QR code record created"
+        card_id = %card.id,
+        transaction_id = %wallet_qr_response.transaction_id,
+        "Wallet QR data stored on card"
     );
 
-    Ok(IssueCardResult {
-        card,
-        member,
-        wallet_qr,
-    })
+    // Reload card to get wallet fields
+    let card = MembershipCard::find_by_id(pool, card.id)
+        .await?
+        .expect("Card should exist after creation");
+
+    // NFR-001: Log performance metrics (5-second target)
+    let total_duration = start_time.elapsed();
+    let duration_secs = total_duration.as_secs_f64();
+
+    if duration_secs > 5.0 {
+        tracing::warn!(
+            duration_secs = duration_secs,
+            youtube_api_ms = youtube_duration.as_millis(),
+            wallet_api_ms = wallet_duration.as_millis(),
+            card_id = %card.id,
+            "Card issuance exceeded 5-second target (NFR-001)"
+        );
+    } else {
+        tracing::info!(
+            duration_secs = duration_secs,
+            youtube_api_ms = youtube_duration.as_millis(),
+            wallet_api_ms = wallet_duration.as_millis(),
+            card_id = %card.id,
+            "Card issuance completed within target"
+        );
+    }
+
+    Ok(IssueCardResult { card, member })
 }

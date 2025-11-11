@@ -3,6 +3,7 @@
 pub mod auth;
 pub mod cards;
 pub mod events;
+pub mod health;
 pub mod issuers;
 pub mod middleware;
 pub mod verification;

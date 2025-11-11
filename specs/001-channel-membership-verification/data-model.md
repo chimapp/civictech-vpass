@@ -6,14 +6,24 @@
 
 ## Overview
 
-The MVP requires persistent storage for issuer configuration, OAuth sessions, cached member metadata, and issued membership cards. Revocation logs, verification events, and non-YouTube platform data are intentionally deferred to future specs. All identifiers are UUIDs, timestamps are UTC.
+The extended MVP includes issuer configuration, OAuth sessions, member profiles, membership cards with integrated wallet data, event management, and OIDVP-based verification tracking. All identifiers are UUIDs, timestamps are UTC.
+
+**Note**: The following schema reflects the actual implemented system, which includes features from spec-002 (event management, OIDVP verification) implemented alongside the original MVP.
+
+**Architectural Simplifications (2025-11-10)**:
+- Wallet QR fields merged into `membership_cards` (was separate 1:1 `wallet_qr_codes` table)
+- Verification session state managed in frontend JavaScript (no `verification_sessions` table)
+- Only successful verifications persisted in `verification_events` (audit log)
 
 ```
-card_issuers ─┐
-              ├── membership_cards
-oauth_sessions┘             ▲
-      │                     │
-      └──── members ────────┘
+card_issuers ─┬── membership_cards (includes wallet QR data)
+              │          │
+              │          └── verification_events
+              │
+              └── events ─── verification_events
+
+oauth_sessions ──┐
+                 └── members
 ```
 
 ---
@@ -87,7 +97,7 @@ Indexes:
 
 ## Table: `membership_cards`
 
-Immutable record of cards issued to members.
+Record of cards issued to members. Includes integrated Taiwan Digital Wallet (數位皮夾) QR data.
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
@@ -99,21 +109,41 @@ Immutable record of cards issued to members.
 | verification_comment_id | TEXT | NOT NULL | `comments.list` ID |
 | verification_video_id | TEXT | NOT NULL | Members-only verification video ID |
 | snapshot_json | JSONB | NOT NULL | Raw payload snapshot for auditing (comment + verification context) |
-| qr_payload | JSONB | NOT NULL | Data encoded into QR |
-| qr_signature | TEXT | NOT NULL | Hex-encoded HMAC-SHA256 |
+| status | ENUM(card_status) | NOT NULL DEFAULT 'active' | Card lifecycle state: active, expired, revoked, suspended, deleted |
+| expires_at | TIMESTAMPTZ | NULL | Card expiration (30 days default) |
+| last_verified_at | TIMESTAMPTZ | NULL | Last membership verification timestamp |
+| verification_failures | INT | NOT NULL DEFAULT 0 | Counter for failed verification attempts |
+| **wallet_transaction_id** | TEXT | NULL | Taiwan wallet API transaction ID |
+| **wallet_qr_code** | TEXT | NULL | Base64-encoded QR code image (data URL) |
+| **wallet_deep_link** | TEXT | NULL | Deep link to open in wallet app |
+| **wallet_cid** | TEXT | NULL | Credential ID after wallet import |
+| **wallet_scanned_at** | TIMESTAMPTZ | NULL | Timestamp when wallet scanned QR |
 | deleted_at | TIMESTAMPTZ | NULL | Soft deletion timestamp; NULL = active card |
 | issued_at | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | |
 
+**Note**: Wallet-related fields (bold) were moved from a separate `wallet_qr_codes` table (1:1 relationship, simplified 2025-11-10).
+
 Unique Constraints:
-- `uniq_active_membership_card` UNIQUE (issuer_id, member_id) WHERE deleted_at IS NULL
+- Cards use status-based uniqueness (one active card per issuer/member pair)
 
 Indexes:
 - `idx_membership_cards_member` ON (member_id, issued_at DESC)
 - `idx_membership_cards_issuer` ON (issuer_id, issued_at DESC)
+- `idx_membership_cards_transaction_id` ON (wallet_transaction_id)
 
 ---
 
-## Supporting Views / Future Expansion
+## Removed Tables (Architectural Simplifications)
 
-- Add `revocations`, `verification_events`, and multi-platform columns in follow-up specs.
-- Consider a materialized view or cached table for frequently accessed QR payloads once organizer verification exists.
+### `wallet_qr_codes` (removed 2025-11-10)
+Previously a separate 1:1 table for Taiwan Digital Wallet QR data. Simplified by merging fields directly into `membership_cards` since:
+- One card generates one QR code (1:1 relationship)
+- Members don't need to re-scan
+- Only one wallet format supported
+
+### `verification_sessions` (removed 2025-11-10)
+Previously tracked pending verification state in database. Simplified by managing state in frontend JavaScript since:
+- Session state is ephemeral (5-minute timeout)
+- Frontend already polls for status
+- Only successful verifications need persistence (in `verification_events`)
+- Reduced unnecessary database writes for temporary state

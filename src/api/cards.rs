@@ -19,7 +19,6 @@ use crate::api::middleware::{
 };
 use crate::models::{
     card::MembershipCard, issuer::CardIssuer, oauth_session::OAuthSession,
-    wallet_qr_code::WalletQrCode,
 };
 use crate::services::{card_issuer, wallet_qr};
 
@@ -67,7 +66,6 @@ impl IntoResponse for CardsError {
 #[template(path = "cards/show.html")]
 struct ShowCardTemplate {
     card: MembershipCard,
-    wallet_qr: Option<WalletQrCode>,
 }
 
 #[derive(Template)]
@@ -243,13 +241,8 @@ async fn show_card(
         return Err(CardsError::NotFound);
     }
 
-    // Load the active wallet QR code for this card
-    let wallet_qr =
-        crate::models::wallet_qr_code::WalletQrCode::find_active_by_card_id(&state.pool, card.id)
-            .await
-            .map_err(CardsError::DatabaseError)?;
-
-    Ok(ShowCardTemplate { card, wallet_qr })
+    // Card already contains wallet QR data (no separate table lookup needed)
+    Ok(ShowCardTemplate { card })
 }
 
 async fn card_qr(
@@ -270,14 +263,9 @@ async fn card_qr(
         return Err(CardsError::NotFound);
     }
 
-    // Load the active wallet QR code for this card
-    let wallet_qr =
-        crate::models::wallet_qr_code::WalletQrCode::find_active_by_card_id(&state.pool, card.id)
-            .await
-            .map_err(CardsError::DatabaseError)?;
-
-    let wallet_qr_data = wallet_qr
-        .map(|qr| qr.qr_code)
+    // Get wallet QR code from card (now stored directly on card)
+    let wallet_qr_data = card
+        .wallet_qr_code
         .unwrap_or_else(|| "Not available".to_string());
 
     Ok((
@@ -340,22 +328,19 @@ async fn poll_credential(
         return Err(CardsError::NotFound);
     }
 
-    // Get the active wallet QR code for this card
-    let wallet_qr = WalletQrCode::find_active_by_card_id(&state.pool, card.id)
-        .await
-        .map_err(CardsError::DatabaseError)?
-        .ok_or_else(|| {
-            CardsError::WalletQrError(wallet_qr::WalletQrError::ApiError(
-                "No active wallet QR code found".to_string(),
-            ))
-        })?;
+    // Check if card has wallet transaction ID
+    let transaction_id = card.wallet_transaction_id.as_ref().ok_or_else(|| {
+        CardsError::WalletQrError(wallet_qr::WalletQrError::ApiError(
+            "No wallet QR code generated for this card".to_string(),
+        ))
+    })?;
 
     // Check if we already have a CID
-    if let Some(cid) = wallet_qr.cid {
+    if let Some(cid) = &card.wallet_cid {
         tracing::info!(card_id = %card_id, cid = %cid, "CID already stored");
         return Ok(axum::Json(PollCredentialResponse {
             status: "ready".to_string(),
-            cid: Some(cid),
+            cid: Some(cid.clone()),
             message: "Credential already issued".to_string(),
         }));
     }
@@ -376,7 +361,7 @@ async fn poll_credential(
     let credential_response = wallet_qr::poll_credential_status(
         issuer_api_url,
         issuer_access_token,
-        &wallet_qr.transaction_id,
+        transaction_id,
     )
     .await
     .map_err(CardsError::WalletQrError)?;
@@ -386,13 +371,13 @@ async fn poll_credential(
         .map_err(CardsError::WalletQrError)?;
 
     // Store the CID in the database
-    WalletQrCode::mark_as_scanned(&state.pool, wallet_qr.id, cid.clone())
+    MembershipCard::mark_wallet_scanned(&state.pool, card_id, cid.clone())
         .await
         .map_err(CardsError::DatabaseError)?;
 
     tracing::info!(
         card_id = %card_id,
-        transaction_id = %wallet_qr.transaction_id,
+        transaction_id = %transaction_id,
         cid = %cid,
         "Credential CID stored successfully"
     );

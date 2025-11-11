@@ -14,7 +14,6 @@ use crate::api::middleware::session::AppState;
 use crate::models::{
     event::Event,
     verification_event::{CreateVerificationEventData, VerificationEvent},
-    verification_session::{CreateVerificationSessionData, VerificationSession},
 };
 use crate::services::oidvp_verifier;
 
@@ -23,8 +22,6 @@ pub enum VerificationApiError {
     DatabaseError(sqlx::Error),
     OidvpError(oidvp_verifier::OidvpError),
     EventNotFound,
-    SessionNotFound,
-    SessionExpired,
     ValidationError(String),
     ConfigError(String),
 }
@@ -42,12 +39,6 @@ impl IntoResponse for VerificationApiError {
             ),
             VerificationApiError::EventNotFound => {
                 (StatusCode::NOT_FOUND, "Event not found".to_string())
-            }
-            VerificationApiError::SessionNotFound => {
-                (StatusCode::NOT_FOUND, "Verification session not found".to_string())
-            }
-            VerificationApiError::SessionExpired => {
-                (StatusCode::GONE, "QR code expired, please request a new one".to_string())
             }
             VerificationApiError::ValidationError(msg) => (StatusCode::BAD_REQUEST, msg),
             VerificationApiError::ConfigError(msg) => (
@@ -150,7 +141,7 @@ async fn scanner_page(
 
 /// Request verification QR code
 ///
-/// Generates a new QR code via OIDVP API and stores the session
+/// Generates a new QR code via OIDVP API (no database storage - frontend manages state)
 async fn request_qr(
     State(state): State<AppState>,
     Path(event_id): Path<Uuid>,
@@ -198,76 +189,33 @@ async fn request_qr(
         .unwrap_or(&qr_response.qrcode_image)
         .to_string();
 
-    // Store verification session
-    let session = VerificationSession::create(
-        &state.pool,
-        CreateVerificationSessionData {
-            event_id,
-            transaction_id: qr_response.transaction_id.clone(),
-            qrcode_image: qrcode_image.clone(),
-            auth_uri: qr_response.auth_uri.clone(),
-        },
-    )
-    .await
-    .map_err(VerificationApiError::DatabaseError)?;
-
     tracing::info!(
-        transaction_id = %session.transaction_id,
-        expires_at = %session.expires_at,
-        "Verification session created"
+        transaction_id = %qr_response.transaction_id,
+        "Verification QR generated (frontend will manage state)"
     );
 
+    // Return directly to frontend - no database storage
+    // Frontend manages the pending state in JavaScript
     Ok(Json(RequestQrResponse {
-        transaction_id: session.transaction_id,
+        transaction_id: qr_response.transaction_id,
         qrcode_image,
-        auth_uri: session.auth_uri,
+        auth_uri: qr_response.auth_uri,
         expires_in_seconds: 300, // 5 minutes
     }))
 }
 
 /// Check verification result
 ///
-/// Polls OIDVP API for verification result
+/// Polls OIDVP API for verification result (frontend-managed state)
 async fn check_result(
     State(state): State<AppState>,
     Path((event_id, transaction_id)): Path<(Uuid, String)>,
 ) -> Result<Json<CheckResultResponse>, VerificationApiError> {
-    // Find verification session
-    let session = VerificationSession::find_by_transaction_id(&state.pool, &transaction_id)
+    // Verify event exists
+    Event::find_by_id(&state.pool, event_id)
         .await
         .map_err(VerificationApiError::DatabaseError)?
-        .ok_or(VerificationApiError::SessionNotFound)?;
-
-    // Check if session belongs to this event
-    if session.event_id != event_id {
-        return Err(VerificationApiError::SessionNotFound);
-    }
-
-    // Check if already completed
-    if session.status == "completed" {
-        return Ok(Json(CheckResultResponse {
-            status: "completed".to_string(),
-            verify_result: session.verify_result,
-            result_description: session.result_description.clone(),
-            member_info: session.result_data.clone(),
-            message: session.result_description.unwrap_or_else(|| "Verification completed".to_string()),
-        }));
-    }
-
-    // Check if expired
-    if session.is_expired() {
-        VerificationSession::mark_expired(&state.pool, &transaction_id)
-            .await
-            .map_err(VerificationApiError::DatabaseError)?;
-
-        return Ok(Json(CheckResultResponse {
-            status: "expired".to_string(),
-            verify_result: None,
-            result_description: None,
-            member_info: None,
-            message: "QR code expired (5 minutes limit)".to_string(),
-        }));
-    }
+        .ok_or(VerificationApiError::EventNotFound)?;
 
     // Get verifier config
     let verifier_api_url = state
@@ -284,7 +232,7 @@ async fn check_result(
 
     tracing::debug!(transaction_id = %transaction_id, "Polling OIDVP result");
 
-    // Poll OIDVP API
+    // Poll OIDVP API directly (no database session tracking)
     match oidvp_verifier::poll_verification_result(
         verifier_api_url,
         verifier_access_token.expose_secret(),
@@ -300,18 +248,7 @@ async fn check_result(
                 None
             };
 
-            // Update session
-            VerificationSession::update_result(
-                &state.pool,
-                &transaction_id,
-                result.verify_result,
-                result.result_description.clone(),
-                member_info.clone(),
-            )
-            .await
-            .map_err(VerificationApiError::DatabaseError)?;
-
-            // If successful, create verification event record
+            // If successful, create verification event record (audit log)
             if result.verify_result {
                 // Try to extract card_id from member_info if available
                 let card_id = member_info
@@ -356,7 +293,7 @@ async fn check_result(
             }))
         }
         Err(oidvp_verifier::OidvpError::NotReady) => {
-            // Still waiting for user to scan
+            // Still waiting for user to scan (frontend will keep polling)
             Ok(Json(CheckResultResponse {
                 status: "pending".to_string(),
                 verify_result: None,
@@ -367,12 +304,6 @@ async fn check_result(
         }
         Err(e) => {
             tracing::error!(error = ?e, "Failed to poll verification result");
-
-            // Mark session as failed
-            VerificationSession::mark_failed(&state.pool, &transaction_id, &e.to_string())
-                .await
-                .map_err(VerificationApiError::DatabaseError)?;
-
             Err(VerificationApiError::OidvpError(e))
         }
     }

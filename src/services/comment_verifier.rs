@@ -65,11 +65,13 @@ struct AuthorChannelId {
 /// 1. Fetches the comment from YouTube Data API
 /// 2. Verifies the comment belongs to the authenticated user
 /// 3. Verifies the comment is on the expected verification video
+///
+/// Note: Per FR-003 clarification, there is no age restriction on comments.
+/// Comments from any date are accepted as long as ownership and video validation pass.
 pub async fn verify_comment(
     comment_id: &str,
     expected_video_id: &str,
     expected_author_channel_id: &str,
-    _session_started_at: DateTime<Utc>,
     access_token: &str,
 ) -> Result<CommentVerificationResult, CommentVerificationError> {
     let client = Client::new();

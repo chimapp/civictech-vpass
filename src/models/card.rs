@@ -30,6 +30,13 @@ pub struct MembershipCard {
     pub verification_failures: i32,
     pub deleted_at: Option<DateTime<Utc>>,
     pub issued_at: DateTime<Utc>,
+
+    // Taiwan Digital Wallet integration (merged from wallet_qr_codes table)
+    pub wallet_transaction_id: Option<String>,
+    pub wallet_qr_code: Option<String>,
+    pub wallet_deep_link: Option<String>,
+    pub wallet_cid: Option<String>,
+    pub wallet_scanned_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone)]
@@ -98,6 +105,15 @@ impl MembershipCard {
         Ok(card)
     }
 
+    /// Checks if the card has expired
+    /// Returns true if expires_at exists and is in the past
+    pub fn is_expired(&self) -> bool {
+        match self.expires_at {
+            Some(expiration) => expiration < Utc::now(),
+            None => false,
+        }
+    }
+
     /// Finds a card by its ID
     pub async fn find_by_id(pool: &PgPool, id: Uuid) -> Result<Option<Self>, sqlx::Error> {
         let card = sqlx::query_as::<_, Self>(
@@ -133,6 +149,30 @@ impl MembershipCard {
         .await?;
 
         Ok(card)
+    }
+
+    /// Finds active AND unexpired cards for a member at a specific issuer
+    /// Used for duplicate card prevention (FR-006 + FR-006a)
+    pub async fn find_active_unexpired_cards(
+        pool: &PgPool,
+        issuer_id: Uuid,
+        member_id: Uuid,
+    ) -> Result<Vec<Self>, sqlx::Error> {
+        let cards = sqlx::query_as::<_, Self>(
+            r#"
+            SELECT * FROM membership_cards
+            WHERE issuer_id = $1 AND member_id = $2
+              AND status = 'active'
+              AND (expires_at IS NULL OR expires_at > NOW())
+            ORDER BY issued_at DESC
+            "#,
+        )
+        .bind(issuer_id)
+        .bind(member_id)
+        .fetch_all(pool)
+        .await?;
+
+        Ok(cards)
     }
 
     /// Lists all non-deleted cards for a member (across all issuers)
@@ -282,5 +322,74 @@ impl MembershipCard {
         .await?;
 
         Ok(cards)
+    }
+
+    // ========== Taiwan Digital Wallet Operations ==========
+
+    /// Updates wallet QR data for this card
+    pub async fn set_wallet_qr(
+        pool: &PgPool,
+        card_id: Uuid,
+        transaction_id: String,
+        qr_code: String,
+        deep_link: Option<String>,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+            UPDATE membership_cards
+            SET wallet_transaction_id = $2,
+                wallet_qr_code = $3,
+                wallet_deep_link = $4
+            WHERE id = $1
+            "#,
+        )
+        .bind(card_id)
+        .bind(transaction_id)
+        .bind(qr_code)
+        .bind(deep_link)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Finds a card by wallet transaction ID
+    pub async fn find_by_wallet_transaction_id(
+        pool: &PgPool,
+        transaction_id: &str,
+    ) -> Result<Option<Self>, sqlx::Error> {
+        let card = sqlx::query_as::<_, Self>(
+            r#"
+            SELECT * FROM membership_cards
+            WHERE wallet_transaction_id = $1
+            "#,
+        )
+        .bind(transaction_id)
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(card)
+    }
+
+    /// Marks wallet as scanned with CID
+    pub async fn mark_wallet_scanned(
+        pool: &PgPool,
+        card_id: Uuid,
+        cid: String,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+            UPDATE membership_cards
+            SET wallet_cid = $2,
+                wallet_scanned_at = NOW()
+            WHERE id = $1
+            "#,
+        )
+        .bind(card_id)
+        .bind(cid)
+        .execute(pool)
+        .await?;
+
+        Ok(())
     }
 }
