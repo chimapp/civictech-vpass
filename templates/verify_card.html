@@ -4,43 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>驗證會員卡 - VPass</title>
-    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <div class="container">
+    <main>
         <h1>驗證會員卡</h1>
 
         <!-- TODO: T044 - Implement card verification interface with QR scanner -->
-        <div class="scanner-container">
-            <div id="qr-reader" style="width: 100%; max-width: 600px;"></div>
+        <section aria-label="掃描器">
+            <div id="qr-reader"></div>
 
-            <div class="manual-input hidden">
+            <section id="manual-input" hidden aria-label="手動輸入">
                 <p>無法使用相機？</p>
+                <label for="manual-code">手動輸入卡片代碼</label>
                 <input type="text" id="manual-code" placeholder="手動輸入卡片代碼">
-                <button onclick="verifyManualCode()" class="btn">驗證</button>
-            </div>
-        </div>
+                <button type="button" onclick="verifyManualCode()">驗證</button>
+            </section>
+        </section>
 
-        <div id="verification-result" class="hidden">
-            <div class="result-card">
-                <h2 id="result-status">驗證結果</h2>
-                <div id="result-details">
-                    <!-- Verification details will be shown here -->
-                </div>
+        <section id="verification-result" hidden>
+            <h2 id="result-status">驗證結果</h2>
+            <div id="result-details">
+                <!-- Verification details will be shown here -->
             </div>
-        </div>
+        </section>
 
-        <div class="auth-section">
+        <section aria-label="主辦方登入">
             <h3>主辦方登入</h3>
             <p>登入後可查看驗證歷史記錄</p>
-            <a href="/auth/youtube/login?role=organizer" class="btn btn-youtube">
-                使用 YouTube 登入
-            </a>
-            <a href="/auth/twitch/login?role=organizer" class="btn btn-twitch">
-                使用 Twitch 登入
-            </a>
-        </div>
-    </div>
+            <ul>
+                <li><a href="/auth/youtube/login?role=organizer">使用 YouTube 登入</a></li>
+                <li><a href="/auth/twitch/login?role=organizer">使用 Twitch 登入</a></li>
+            </ul>
+        </section>
+    </main>
 
     <script src="/static/js/qr-scanner.js"></script>
     <script>

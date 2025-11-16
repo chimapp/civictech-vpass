@@ -3,22 +3,19 @@
 {% block title %}驗證{% endblock %}
 
 {% block content %}
-<div class="container">
+<section>
     <h1>選擇要驗證的活動</h1>
-
-    <div class="events-list">
-        {% if events.is_empty() %}
-            <p>找不到有效的活動。</p>
-        {% else %}
-            <ul>
-                {% for event in events %}
+    {% if events.is_empty() %}
+        <p>找不到有效的活動。</p>
+    {% else %}
+        <ul>
+            {% for event in events %}
                 <li>
                     <a href="/verify/{{ event.id }}/scanner">{{ event.event_name }}</a>
-                    <span class="event-date">{{ event.event_date }}</span>
+                    <span>{{ event.event_date }}</span>
                 </li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    </div>
-</div>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>
 {% endblock %}

@@ -2,45 +2,37 @@
 
 {% block title %}我的卡片 - VPass{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="/static/css/cards-list.css">
-{% endblock %}
-
 {% block content %}
-    <a href="/" class="back">返回</a>
+<nav aria-label="上一頁">
+    <a href="/">返回</a>
+</nav>
 
-    <div class="header">
-        <h1>我的卡片</h1>
-        <p class="subtitle">會員收藏</p>
-    </div>
+<header>
+    <h1>我的卡片</h1>
+    <p>會員收藏</p>
+</header>
 
-    {% if let Some(msg) = success_message %}
-        <div class="success-message">{{ msg }}</div>
-    {% endif %}
+{% if let Some(msg) = success_message %}
+    <p role="status">{{ msg }}</p>
+{% endif %}
 
-    {% if cards.is_empty() %}
-        <div class="empty">
-            <p>您還沒有任何卡片。</p>
-            <a href="/issuers" class="button">瀏覽頻道</a>
-        </div>
-    {% else %}
-        <div class="cards">
-            {% for card in cards %}
-                <a href="/cards/{{ card.id }}" class="card">
-                    <div class="card-level">{{ card.membership_level_label }}</div>
-                    <div class="card-dates">
-                        <div class="date-item">
-                            <span class="label">已確認</span>
-                            <span class="value">{{ card.membership_confirmed_at.format("%Y-%m-%d") }}</span>
-                        </div>
-                        <div class="date-item">
-                            <span class="label">已發行</span>
-                            <span class="value">{{ card.issued_at.format("%Y-%m-%d") }}</span>
-                        </div>
-                    </div>
-                    <div class="card-arrow">→</div>
-                </a>
-            {% endfor %}
-        </div>
-    {% endif %}
+{% if cards.is_empty() %}
+    <p>您還沒有任何卡片。 <a href="/issuers">瀏覽頻道</a></p>
+{% else %}
+    <ul>
+        {% for card in cards %}
+            <li>
+                <article>
+                    <h2><a href="/cards/{{ card.id }}">{{ card.membership_level_label }}</a></h2>
+                    <dl>
+                        <dt>已確認</dt>
+                        <dd>{{ card.membership_confirmed_at.format("%Y-%m-%d") }}</dd>
+                        <dt>已發行</dt>
+                        <dd>{{ card.issued_at.format("%Y-%m-%d") }}</dd>
+                    </dl>
+                </article>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
 {% endblock %}

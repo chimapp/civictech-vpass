@@ -2,43 +2,55 @@
 
 {% block title %}{{ event.event_name }}{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="/static/css/cards-list.css">
-{% endblock %}
-
 {% block content %}
-    <a href="/events" class="back">返回活動</a>
+<nav aria-label="上一頁">
+    <a href="/events">返回活動</a>
+</nav>
 
-    <div class="header">
-        <h1>{{ event.event_name }}</h1>
-        <p class="subtitle">活動詳情</p>
-    </div>
+<header>
+    <h1>{{ event.event_name }}</h1>
+    <p>活動詳情</p>
+</header>
 
-    <div class="event-details">
-        <p><strong>頻道：</strong> {{ issuer.channel_name }}</p>
-        <p><strong>日期：</strong> {{ event.event_date }}</p>
+<section aria-label="活動資料">
+    <dl>
+        <dt>頻道</dt>
+        <dd>{{ issuer.channel_name }}</dd>
+        <dt>日期</dt>
+        <dd>{{ event.event_date }}</dd>
         {% match event.event_location %}
             {% when Some with (loc) %}
-                <p><strong>地點：</strong> {{ loc }}</p>
+                <dt>地點</dt>
+                <dd>{{ loc }}</dd>
             {% when None %}
         {% endmatch %}
         {% match event.event_description %}
             {% when Some with (desc) %}
-                <p><strong>描述：</strong> {{ desc }}</p>
+                <dt>描述</dt>
+                <dd>{{ desc }}</dd>
             {% when None %}
         {% endmatch %}
-    </div>
+    </dl>
+</section>
 
-    <div class="event-stats">
-        <h2>驗證統計</h2>
-        <p>總掃描次數： {{ stats.total_scans }}</p>
-        <p>成功： {{ stats.successful_scans }}</p>
-        <p>失敗： {{ stats.failed_scans }}</p>
-        <p>唯一卡片： {{ stats.unique_cards }}</p>
-    </div>
+<section aria-label="驗證統計">
+    <h2>驗證統計</h2>
+    <dl>
+        <dt>總掃描次數</dt>
+        <dd>{{ stats.total_scans }}</dd>
+        <dt>成功</dt>
+        <dd>{{ stats.successful_scans }}</dd>
+        <dt>失敗</dt>
+        <dd>{{ stats.failed_scans }}</dd>
+        <dt>唯一卡片</dt>
+        <dd>{{ stats.unique_cards }}</dd>
+    </dl>
+</section>
 
-    <div class="actions" style="margin-top: 40px; display: flex; gap: 16px;">
-        <a href="/verify/{{ event.id }}/scanner" class="button">開始掃描器</a>
-        <a href="/verify/{{ event.id }}/history" class="button">查看歷史記錄</a>
-    </div>
+<section aria-label="操作">
+    <ul>
+        <li><a href="/verify/{{ event.id }}/scanner">開始掃描器</a></li>
+        <li><a href="/verify/{{ event.id }}/history">查看歷史記錄</a></li>
+    </ul>
+</section>
 {% endblock %}

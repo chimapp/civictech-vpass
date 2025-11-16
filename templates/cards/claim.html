@@ -2,71 +2,48 @@
 
 {% block title %}領取卡片 - VPass{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="/static/css/claim.css">
-{% endblock %}
-
 {% block content %}
-    <a href="/issuers" class="back">返回</a>
+<nav aria-label="上一頁">
+    <a href="/issuers">返回</a>
+</nav>
 
-    <div class="header">
-        <h1>領取卡片</h1>
-        <p class="subtitle">會員驗證</p>
-    </div>
+<header>
+    <h1>領取卡片</h1>
+    <p>會員驗證</p>
+</header>
 
-    <div class="channel-info">
-        <h2>{{ issuer.channel_name }}</h2>
-        <p class="channel-id">{{ issuer.channel_handle.as_deref().unwrap_or(issuer.youtube_channel_id.as_str()) }}</p>
-    </div>
+<section aria-label="頻道資訊">
+    <h2>{{ issuer.channel_name }}</h2>
+    <p>{{ issuer.channel_handle.as_deref().unwrap_or(issuer.youtube_channel_id.as_str()) }}</p>
+</section>
 
-    {% match is_authenticated %}
-        {% when false %}
-        <div class="info-box" style="background-color: #F5F3ED; padding: 40px; margin-bottom: 40px; border-left: 4px solid #B8915F;">
-            <h2 style="font-size: 24px; font-weight: 400; margin-bottom: 24px; color: #1E3A5F;">👋 快完成了！</h2>
-
-            <p style="margin-bottom: 24px; line-height: 1.6; color: #000;">
-                要領取 <strong>{{ issuer.channel_name }}</strong> 的會員卡片，您需要：
-            </p>
-
-            <ol style="margin-left: 20px; margin-bottom: 32px; line-height: 1.8; color: #000;">
-                <li style="margin-bottom: 12px;">
-                    <strong>使用您的 YouTube 帳號登入</strong><br>
-                    <span style="color: #666; font-size: 14px;">（以便我們驗證您是真實會員）</span>
-                </li>
-                <li style="margin-bottom: 12px;">
-                    <strong>在驗證影片下留言</strong><br>
-                    <span style="color: #666; font-size: 14px;">（任何文字都可以 - 只是為了確認會員身份）</span>
-                </li>
-                <li style="margin-bottom: 12px;">
-                    <strong>回到這裡並貼上您的留言網址</strong><br>
-                    <span style="color: #666; font-size: 14px;">（我們會驗證並發行您的卡片）</span>
-                </li>
+{% match is_authenticated %}
+    {% when false %}
+        <section aria-label="登入提示">
+            <h2>操作步驟</h2>
+            <p>要領取 <strong>{{ issuer.channel_name }}</strong> 的會員卡片，請完成以下步驟：</p>
+            <ol>
+                <li>使用您的 YouTube 帳號登入。</li>
+                <li>在驗證影片下留言。</li>
+                <li>回到這裡並貼上留言網址。</li>
             </ol>
-
-            <p style="margin-bottom: 24px; color: #000; font-weight: 500;">準備好了嗎？</p>
-
-            <a href="/auth/youtube/login?return_url=/channels/{{ issuer_id }}/claim" class="button" style="display: inline-block; width: auto; padding: 16px 32px; background: #1E3A5F; color: #fff; text-decoration: none; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; transition: background 0.2s;">
-                使用 YouTube 登入
-            </a>
-        </div>
-        {% when true %}
-        <div class="info-box">
+            <p><a href="/auth/youtube/login?return_url=/channels/{{ issuer_id }}/claim">使用 YouTube 登入</a></p>
+        </section>
+    {% when true %}
+        <section aria-label="操作說明">
             <h2>操作說明</h2>
             <ol>
-                <li>前往該頻道的會員專屬驗證影片</li>
-                <li>留下評論（任何文字都可以）</li>
-                <li>複製留言網址</li>
-                <li>在下方貼上並送出</li>
+                <li>前往該頻道的會員專屬驗證影片。</li>
+                <li>留下評論（任何文字都可以）。</li>
+                <li>複製留言網址。</li>
+                <li>貼上並送出。</li>
             </ol>
-        </div>
+        </section>
 
         <form action="/channels/{{ issuer.id }}/claim" method="POST">
-            <div class="form-group">
-                <label for="comment_link">留言網址或 ID</label>
-                <input type="text" name="comment_link" id="comment_link" required
-                       placeholder="https://www.youtube.com/watch?v=...&lc=...">
-            </div>
+            <label for="comment_link">留言網址或 ID</label>
+            <input type="text" name="comment_link" id="comment_link" required placeholder="https://www.youtube.com/watch?v=...&lc=...">
             <button type="submit">發行卡片</button>
         </form>
-    {% endmatch %}
+{% endmatch %}
 {% endblock %}

@@ -3,85 +3,71 @@
 {% block title %}驗證 - {{ event.event_name }}{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 800px; margin: 0 auto; padding: 40px 20px;">
-    <a href="/verify" class="back" style="display: inline-block; margin-bottom: 20px;">&larr; 返回活動</a>
+<section>
+    <nav aria-label="上一頁">
+        <a href="/verify">&larr; 返回活動</a>
+    </nav>
 
-    <div class="header">
+    <header>
         <h1>{{ event.event_name }}</h1>
-        <h2 style="color: #666; font-weight: 400;">{{ issuer.channel_name }}</h2>
-    </div>
+        <p>{{ issuer.channel_name }}</p>
+    </header>
 
-    <div id="instructions" style="background: #f5f3ed; padding: 24px; border-radius: 8px; margin: 32px 0;">
-        <h3 style="margin-top: 0;">如何驗證會員身份</h3>
-        <ol style="line-height: 1.8;">
-            <li>在手機上開啟<strong>數位皮夾</strong>應用程式</li>
-            <li>向參與者展示下方的 QR Code</li>
-            <li>請他們使用數位皮夾應用程式掃描</li>
-            <li>等待驗證結果出現</li>
+    <section id="instructions" aria-label="驗證步驟">
+        <h2>如何驗證會員身份</h2>
+        <ol>
+            <li>在手機上開啟數位皮夾應用程式。</li>
+            <li>向參與者展示下方的 QR Code。</li>
+            <li>請他們使用數位皮夾應用程式掃描。</li>
+            <li>等待驗證結果出現。</li>
         </ol>
-    </div>
+    </section>
 
-    <div id="qr-container" style="text-align: center; margin: 40px 0;">
-        <div id="loading" style="padding: 60px;">
-            <p style="font-size: 18px;">產生 QR Code 中...</p>
+    <section id="qr-container" aria-label="驗證 QR Code">
+        <div id="loading">
+            <p>產生 QR Code 中...</p>
         </div>
 
-        <div id="qr-display" style="display: none;">
-            <div id="qr-image-container" style="background: white; display: inline-block; padding: 32px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                <img id="qr-image" style="width: 400px; height: 400px; display: block;" />
-            </div>
-
-            <div id="timer" style="margin-top: 24px; font-size: 16px; color: #666;">
-                到期時間： <span id="countdown" style="font-weight: 700; color: #1e3a5f;">5:00</span>
-            </div>
-
-            <button id="refresh-btn" onclick="requestNewQR()" style="margin-top: 24px; padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; display: none;">
-                產生新的 QR Code
-            </button>
+        <div id="qr-display" hidden>
+            <figure>
+                <img id="qr-image" alt="驗證 QR Code">
+                <figcaption id="timer">
+                    到期時間： <span id="countdown">5:00</span>
+                </figcaption>
+            </figure>
+            <button id="refresh-btn" type="button" hidden onclick="requestNewQR()">產生新的 QR Code</button>
         </div>
-    </div>
+    </section>
 
-    <div id="result-container" style="margin-top: 40px;">
-        <div id="pending-status" style="display: none; text-align: center; padding: 32px; background: #e8f4fd; border-radius: 8px;">
-            <div style="font-size: 48px; margin-bottom: 16px;">⏳</div>
-            <h3 style="margin: 0 0 8px 0;">等待掃描中...</h3>
-            <p style="margin: 0; color: #666;">請參與者掃描 QR Code</p>
+    <section id="result-container" aria-label="驗證結果">
+        <div id="pending-status" hidden>
+            <p>等待掃描中...</p>
+            <p>請參與者掃描 QR Code</p>
         </div>
 
-        <div id="success-result" style="display: none; padding: 32px; background: #d4edda; border: 2px solid #28a745; border-radius: 8px;">
-            <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">✅</div>
-            <h3 style="margin: 0 0 16px 0; text-align: center; color: #155724;">驗證成功！</h3>
-            <div id="member-info" style="background: white; padding: 20px; border-radius: 4px; margin-top: 16px;"></div>
-            <button onclick="requestNewQR()" style="margin-top: 24px; padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; width: 100%;">
-                驗證下一位
-            </button>
+        <div id="success-result" hidden>
+            <h3>驗證成功</h3>
+            <div id="member-info"></div>
+            <button type="button" onclick="requestNewQR()">驗證下一位</button>
         </div>
 
-        <div id="failed-result" style="display: none; padding: 32px; background: #f8d7da; border: 2px solid #dc3545; border-radius: 8px;">
-            <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">❌</div>
-            <h3 style="margin: 0 0 16px 0; text-align: center; color: #721c24;">驗證失敗</h3>
-            <p id="error-message" style="text-align: center; margin: 0;"></p>
-            <button onclick="requestNewQR()" style="margin-top: 24px; padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; width: 100%;">
-                再試一次
-            </button>
+        <div id="failed-result" hidden>
+            <h3>驗證失敗</h3>
+            <p id="error-message"></p>
+            <button type="button" onclick="requestNewQR()">再試一次</button>
         </div>
 
-        <div id="expired-result" style="display: none; padding: 32px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px;">
-            <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">⏰</div>
-            <h3 style="margin: 0 0 16px 0; text-align: center;">QR Code 已過期</h3>
-            <p style="text-align: center; margin: 0 0 24px 0;">為了安全，QR Code 會在 5 分鐘後過期。</p>
-            <button onclick="requestNewQR()" style="padding: 12px 32px; background: #b8915f; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; width: 100%;">
-                產生新的 QR Code
-            </button>
+        <div id="expired-result" hidden>
+            <h3>QR Code 已過期</h3>
+            <p>為了安全，QR Code 會在 5 分鐘後過期。</p>
+            <button type="button" onclick="requestNewQR()">產生新的 QR Code</button>
         </div>
-    </div>
+    </section>
 
-    <div style="margin-top: 48px; text-align: center;">
-        <a href="/verify/{{ event.id }}/history" style="color: #1e3a5f; text-decoration: none; font-size: 16px;">
-            📊 查看驗證歷史記錄
-        </a>
-    </div>
-</div>
+    <p>
+        <a href="/verify/{{ event.id }}/history">查看驗證歷史記錄</a>
+    </p>
+</section>
 
 <script>
 const eventId = "{{ event.id }}";
@@ -89,6 +75,20 @@ let transactionId = null;
 let pollInterval = null;
 let expiresAt = null;
 let countdownInterval = null;
+
+function showElement(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.hidden = false;
+    }
+}
+
+function hideElement(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.hidden = true;
+    }
+}
 
 // Initialize: Request QR code on page load
 window.onload = function() {
@@ -101,13 +101,20 @@ async function requestNewQR() {
     if (countdownInterval) clearInterval(countdownInterval);
 
     // Reset UI
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('qr-display').style.display = 'none';
-    document.getElementById('pending-status').style.display = 'none';
-    document.getElementById('success-result').style.display = 'none';
-    document.getElementById('failed-result').style.display = 'none';
-    document.getElementById('expired-result').style.display = 'none';
-    document.getElementById('refresh-btn').style.display = 'none';
+    const loadingContainer = document.getElementById('loading');
+    if (loadingContainer) {
+        loadingContainer.textContent = '';
+        const loadingMessage = document.createElement('p');
+        loadingMessage.textContent = '產生 QR Code 中...';
+        loadingContainer.appendChild(loadingMessage);
+    }
+    showElement('loading');
+    hideElement('qr-display');
+    hideElement('pending-status');
+    hideElement('success-result');
+    hideElement('failed-result');
+    hideElement('expired-result');
+    hideElement('refresh-btn');
 
     try {
         const response = await fetch(`/verify/${eventId}/request-qr`, {
@@ -127,9 +134,9 @@ async function requestNewQR() {
 
         // Display QR code
         document.getElementById('qr-image').src = `data:image/png;base64,${data.qrcode_image}`;
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('qr-display').style.display = 'block';
-        document.getElementById('pending-status').style.display = 'block';
+        hideElement('loading');
+        showElement('qr-display');
+        showElement('pending-status');
 
         // Start countdown timer
         startCountdown();
@@ -139,13 +146,19 @@ async function requestNewQR() {
 
     } catch (error) {
         console.error('Failed to request QR code:', error);
-        document.getElementById('loading').innerHTML = `
-            <p style="color: #dc3545;">無法產生 QR Code</p>
-            <p style="font-size: 14px; color: #666;">${error.message}</p>
-            <button onclick="requestNewQR()" style="margin-top: 16px; padding: 12px 24px; background: #b8915f; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                重試
-            </button>
-        `;
+        const loading = document.getElementById('loading');
+        loading.textContent = '';
+        const heading = document.createElement('p');
+        heading.textContent = '無法產生 QR Code';
+        const details = document.createElement('p');
+        details.textContent = error.message;
+        const retryButton = document.createElement('button');
+        retryButton.type = 'button';
+        retryButton.textContent = '重試';
+        retryButton.addEventListener('click', requestNewQR);
+        loading.appendChild(heading);
+        loading.appendChild(details);
+        loading.appendChild(retryButton);
     }
 }
 
@@ -165,8 +178,7 @@ function updateCountdown() {
     if (remaining <= 0) {
         clearInterval(countdownInterval);
         clearInterval(pollInterval);
-        document.getElementById('countdown').style.color = '#dc3545';
-        document.getElementById('refresh-btn').style.display = 'inline-block';
+        showElement('refresh-btn');
     }
 }
 
@@ -200,38 +212,41 @@ async function checkResult() {
 }
 
 function displayResult(result) {
-    document.getElementById('pending-status').style.display = 'none';
-    document.getElementById('qr-display').style.display = 'none';
+    hideElement('pending-status');
+    hideElement('qr-display');
 
     if (result.verify_result === true) {
         // Success
-        document.getElementById('success-result').style.display = 'block';
+        showElement('success-result');
 
         // Display member info if available
         if (result.member_info) {
             const memberInfoDiv = document.getElementById('member-info');
-            memberInfoDiv.innerHTML = '<h4 style="margin-top: 0;">會員資訊：</h4>';
+            memberInfoDiv.textContent = '';
+            const heading = document.createElement('h4');
+            heading.textContent = '會員資訊：';
+            memberInfoDiv.appendChild(heading);
 
             for (const [key, value] of Object.entries(result.member_info)) {
                 if (key !== 'credentialType') {
-                    memberInfoDiv.innerHTML += `
-                        <p style="margin: 8px 0;"><strong>${key}:</strong> ${value}</p>
-                    `;
+                    const item = document.createElement('p');
+                    item.textContent = `${key}: ${value}`;
+                    memberInfoDiv.appendChild(item);
                 }
             }
         }
     } else {
         // Failed
-        document.getElementById('failed-result').style.display = 'block';
+        showElement('failed-result');
         document.getElementById('error-message').textContent =
             result.result_description || 'Verification failed';
     }
 }
 
 function showExpired() {
-    document.getElementById('pending-status').style.display = 'none';
-    document.getElementById('qr-display').style.display = 'none';
-    document.getElementById('expired-result').style.display = 'block';
+    hideElement('pending-status');
+    hideElement('qr-display');
+    showElement('expired-result');
 }
 </script>
 {% endblock %}

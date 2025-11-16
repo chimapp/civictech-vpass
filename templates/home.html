@@ -2,44 +2,38 @@
 
 {% block title %}VPass{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="/static/css/home.css">
-{% endblock %}
-
 {% block content %}
-    <div class="full-height">
-        {% if is_authenticated %}
-            <h1>VPass</h1>
-            <p class="subtitle">頻道會員驗證</p>
+<section>
+    <header>
+        <h1>VPass</h1>
+        <p>頻道會員驗證</p>
+    </header>
 
-            <div class="menu">
-                <a href="/cards/my-cards" class="button">我的卡片</a>
-                <a href="/issuers" class="button">瀏覽頻道</a>
-                <a href="/events" class="button">活動</a>
-                <a href="/verify" class="button">驗證掃描器</a>
-            </div>
-            <form action="/auth/logout" method="POST" style="margin: 0;">
-                <button type="submit" class="button danger">登出</button>
-            </form>
+    {% if is_authenticated %}
+        <nav aria-label="主要功能">
+            <ul>
+                <li><a href="/cards/my-cards">我的卡片</a></li>
+                <li><a href="/issuers">瀏覽頻道</a></li>
+                <li><a href="/events">活動</a></li>
+                <li><a href="/verify">驗證掃描器</a></li>
+            </ul>
+        </nav>
 
-            <div class="footer">
-                <p>您已登入 VPass</p>
-            </div>
-        {% else %}
-            <h1>VPass</h1>
-            <p class="subtitle">頻道會員驗證</p>
+        <form action="/auth/logout" method="POST">
+            <button type="submit">登出</button>
+        </form>
 
-            <div class="auth-section">
-                <p class="auth-prompt">使用您的 YouTube 帳號登入以開始使用</p>
-
-                <div class="menu">
-                    <a href="/auth/youtube/login" class="button">使用 YouTube 登入</a>
-                </div>
-            </div>
-
-            <div class="footer">
-                <p>使用數位卡片驗證您的頻道會員身份</p>
-            </div>
-        {% endif %}
-    </div>
+        <p>您已登入 VPass</p>
+    {% else %}
+        <section>
+            <p>使用您的 YouTube 帳號登入以開始使用</p>
+            <nav aria-label="登入方式">
+                <ul>
+                    <li><a href="/auth/youtube/login">使用 YouTube 登入</a></li>
+                </ul>
+            </nav>
+        </section>
+        <p>使用數位卡片驗證您的頻道會員身份</p>
+    {% endif %}
+</section>
 {% endblock %}

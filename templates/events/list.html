@@ -2,49 +2,38 @@
 
 {% block title %}活動{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="/static/css/cards-list.css">
-{% endblock %}
-
 {% block content %}
-    <a href="/" class="back">返回</a>
+<nav aria-label="上一頁">
+    <a href="/">返回</a>
+</nav>
 
-    <div class="header">
-        <h1>活動</h1>
-        <p class="subtitle">管理活動</p>
-    </div>
+<header>
+    <h1>活動</h1>
+    <p>管理活動</p>
+</header>
 
-    {% if events.is_empty() %}
-        <div class="empty">
-            <p>找不到活動。</p>
-            <a href="/events/new" class="button">建立新活動</a>
-        </div>
-    {% else %}
-        <div style="margin-bottom: 40px;">
-            <a href="/events/new" class="button">建立新活動</a>
-        </div>
-
-        <div class="cards">
-            {% for event in events %}
-                <a href="/events/{{ event.id }}" class="card">
-                    <div class="card-level">{{ event.event_name }}</div>
-                    <div class="card-dates">
-                        <div class="date-item">
-                            <span class="label">日期</span>
-                            <span class="value">{{ event.event_date }}</span>
-                        </div>
+{% if events.is_empty() %}
+    <p>找不到活動。 <a href="/events/new">建立新活動</a></p>
+{% else %}
+    <p><a href="/events/new">建立新活動</a></p>
+    <ul>
+        {% for event in events %}
+            <li>
+                <article>
+                    <h2><a href="/events/{{ event.id }}">{{ event.event_name }}</a></h2>
+                    <dl>
+                        <dt>日期</dt>
+                        <dd>{{ event.event_date }}</dd>
                         {% match event.event_location %}
                             {% when Some with (loc) %}
-                                <div class="date-item">
-                                    <span class="label">地點</span>
-                                    <span class="value">{{ loc }}</span>
-                                </div>
+                                <dt>地點</dt>
+                                <dd>{{ loc }}</dd>
                             {% when None %}
                         {% endmatch %}
-                    </div>
-                    <div class="card-arrow">→</div>
-                </a>
-            {% endfor %}
-        </div>
-    {% endif %}
+                    </dl>
+                </article>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
 {% endblock %}

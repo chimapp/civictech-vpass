@@ -2,64 +2,50 @@
 
 {% block title %}卡片發行者 - VPass{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="/static/css/issuers.css">
-{% endblock %}
-
 {% block content %}
-    <div class="header">
-        <h1>卡片發行者</h1>
-        <a href="/issuers/new" class="btn btn-primary">建立發行者</a>
-    </div>
+<header>
+    <h1>卡片發行者</h1>
+    <p><a href="/issuers/new">建立發行者</a></p>
+</header>
 
-    {% if issuers.is_empty() %}
-        <div class="empty">
-            <p>尚無發行者。</p>
-            <a href="/issuers/new" class="btn btn-primary">建立第一個發行者</a>
-        </div>
-    {% else %}
-        <div class="issuers">
-            {% for issuer in issuers %}
-                <div class="issuer-card">
-                    <div class="issuer-header">
-                        <h3>{{ issuer.channel_name }}</h3>
-                        <span class="status {% if issuer.is_active %}active{% else %}inactive{% endif %}">
-                            {% if issuer.is_active %}啟用中{% else %}停用中{% endif %}
-                        </span>
-                    </div>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <span class="label">頻道 ID</span>
-                            <span class="value">{{ issuer.youtube_channel_id }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">代號</span>
-                            <span class="value">{{ issuer.channel_handle.as_deref().unwrap_or("N/A") }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">驗證影片</span>
-                            <span class="value">{{ issuer.verification_video_id }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">預設標籤</span>
-                            <span class="value">{{ issuer.default_membership_label }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">皮夾 VC UID</span>
-                            <span class="value">{{ issuer.vc_uid.as_deref().unwrap_or("未設定") }}</span>
-                        </div>
-                    </div>
-                    <div class="actions">
-                        <a href="/channels/{{ issuer.id }}/claim" class="btn btn-primary">領取卡片</a>
-                        <a href="/issuers/{{ issuer.id }}/edit" class="btn btn-secondary">編輯</a>
-                        <form action="/issuers/{{ issuer.id }}/toggle" method="POST" style="display: inline;">
-                            <button type="submit" class="btn btn-warning">
-                                {% if issuer.is_active %}停用{% else %}啟用{% endif %}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
+{% if issuers.is_empty() %}
+    <p>尚無發行者。 <a href="/issuers/new">建立第一個發行者</a></p>
+{% else %}
+    <ul>
+        {% for issuer in issuers %}
+            <li>
+                <article>
+                    <h2>{{ issuer.channel_name }}</h2>
+                    <p>
+                        狀態：
+                        {% if issuer.is_active %}啟用中{% else %}停用中{% endif %}
+                    </p>
+                    <dl>
+                        <dt>頻道 ID</dt>
+                        <dd>{{ issuer.youtube_channel_id }}</dd>
+                        <dt>代號</dt>
+                        <dd>{{ issuer.channel_handle.as_deref().unwrap_or("N/A") }}</dd>
+                        <dt>驗證影片</dt>
+                        <dd>{{ issuer.verification_video_id }}</dd>
+                        <dt>預設標籤</dt>
+                        <dd>{{ issuer.default_membership_label }}</dd>
+                        <dt>皮夾 VC UID</dt>
+                        <dd>{{ issuer.vc_uid.as_deref().unwrap_or("未設定") }}</dd>
+                    </dl>
+                    <ul>
+                        <li><a href="/channels/{{ issuer.id }}/claim">領取卡片</a></li>
+                        <li><a href="/issuers/{{ issuer.id }}/edit">編輯</a></li>
+                        <li>
+                            <form action="/issuers/{{ issuer.id }}/toggle" method="POST">
+                                <button type="submit">
+                                    {% if issuer.is_active %}停用{% else %}啟用{% endif %}
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </article>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
 {% endblock %}

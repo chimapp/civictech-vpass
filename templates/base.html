@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}VPass{% endblock %}</title>
-    <link rel="stylesheet" href="/static/css/base.css">
-    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="container">
+    <main>
         {% block content %}{% endblock %}
-    </div>
-    <div class="toast-container" data-role="toast-root"></div>
+    </main>
+    <section aria-live="polite" data-role="toast-root"></section>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

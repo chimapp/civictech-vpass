@@ -58,11 +58,12 @@ function displayVerificationResult(result) {
     const detailsDiv = document.getElementById('result-details');
     const statusElement = document.getElementById('result-status');
 
-    resultDiv.classList.remove('hidden');
+    if (resultDiv) {
+      resultDiv.hidden = false;
+    }
 
     if (result.is_valid) {
         statusElement.textContent = '✅ 驗證成功';
-        statusElement.style.color = 'var(--color-success)';
 
         detailsDiv.innerHTML = `
             <p><strong>頻道:</strong> ${result.issuer_name}</p>
@@ -71,7 +72,6 @@ function displayVerificationResult(result) {
         `;
     } else {
         statusElement.textContent = '❌ 驗證失敗';
-        statusElement.style.color = 'var(--color-error)';
 
         detailsDiv.innerHTML = `
             <p>${result.error_message || '無效的會員卡'}</p>

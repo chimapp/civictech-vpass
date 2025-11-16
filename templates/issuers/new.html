@@ -2,58 +2,45 @@
 
 {% block title %}建立發行者 - VPass{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="/static/css/issuer-form.css">
-{% endblock %}
-
 {% block content %}
-    <a href="/issuers" class="back">返回發行者</a>
-    <h1>建立發行者</h1>
-    <p class="subtitle">註冊新的卡片發行者</p>
+    <nav aria-label="上一頁">
+        <a href="/issuers">返回發行者</a>
+    </nav>
+
+    <header>
+        <h1>建立發行者</h1>
+        <p>註冊新的卡片發行者</p>
+    </header>
 
     <form action="/issuers" method="POST">
-        <div class="autofill-section">
+        <section aria-label="從 YouTube 快速填寫">
             <h2>從 YouTube 快速填寫</h2>
-            <div class="autofill-input-group">
-                <input type="text" id="channel_url" placeholder="https://www.youtube.com/@Dokibird">
-                <button type="button" id="autofill-btn">自動填寫</button>
-            </div>
-            <div class="error-message" id="error-message"></div>
-        </div>
+            <label for="channel_url">頻道網址</label>
+            <input type="text" id="channel_url" placeholder="https://www.youtube.com/@Dokibird">
+            <button type="button" id="autofill-btn">自動填寫</button>
+            <p id="error-message" role="status"></p>
+        </section>
 
-        <div class="form-group">
-            <label for="youtube_channel_id">YouTube Channel ID <span class="required">*</span></label>
-            <input type="text" name="youtube_channel_id" id="youtube_channel_id" required
-                   placeholder="UCxxxxxxxxxxxxxxxxxxx">
-            <p class="help-text">YouTube 頻道的唯一識別碼</p>
-        </div>
+        <section aria-label="基本資訊">
+            <label for="youtube_channel_id">YouTube Channel ID（必填）</label>
+            <input type="text" name="youtube_channel_id" id="youtube_channel_id" required placeholder="UCxxxxxxxxxxxxxxxxxxx">
+            <p>YouTube 頻道的唯一識別碼。</p>
 
-        <div class="form-group">
-            <label for="channel_name">頻道名稱 <span class="required">*</span></label>
-            <input type="text" name="channel_name" id="channel_name" required
-                   placeholder="我的頻道">
-        </div>
+            <label for="channel_name">頻道名稱（必填）</label>
+            <input type="text" name="channel_name" id="channel_name" required placeholder="我的頻道">
 
-        <div class="form-group">
             <label for="channel_handle">頻道代號</label>
-            <input type="text" name="channel_handle" id="channel_handle"
-                   placeholder="@mychannel">
-            <p class="help-text">選填：頻道的@名字</p>
-        </div>
+            <input type="text" name="channel_handle" id="channel_handle" placeholder="@mychannel">
+            <p>選填：頻道的 @ 名字。</p>
 
-        <div class="form-group">
-            <label for="verification_video_id">驗證影片 ID <span class="required">*</span></label>
-            <input type="text" name="verification_video_id" id="verification_video_id" required
-                   placeholder="dQw4w9WgXcQ">
-            <p class="help-text">會員將在此影片發布驗證留言的影片 ID</p>
-        </div>
+            <label for="verification_video_id">驗證影片 ID（必填）</label>
+            <input type="text" name="verification_video_id" id="verification_video_id" required placeholder="dQw4w9WgXcQ">
+            <p>會員將在此影片發布驗證留言。</p>
 
-        <div class="form-group">
-            <label for="default_membership_label">預設會員標籤 <span class="required">*</span></label>
-            <input type="text" name="default_membership_label" id="default_membership_label" required
-                   placeholder="會員" value="會員">
-            <p class="help-text">在發行的卡片上顯示的標籤（例如：「會員」、「訂閱者」）</p>
-        </div>
+            <label for="default_membership_label">預設會員標籤（必填）</label>
+            <input type="text" name="default_membership_label" id="default_membership_label" required placeholder="會員" value="會員">
+            <p>在卡片上顯示的標籤（例如：「會員」、「訂閱者」）。</p>
+        </section>
 
         <button type="submit">建立發行者</button>
     </form>
@@ -67,11 +54,10 @@
 
             if (!url) {
                 errorDiv.textContent = '請輸入 YouTube 頻道網址';
-                errorDiv.style.display = 'block';
                 return;
             }
 
-            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
             btn.disabled = true;
             btn.textContent = '載入中...';
 
@@ -92,7 +78,6 @@
 
             } catch (error) {
                 errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
             } finally {
                 btn.disabled = false;
                 btn.textContent = '自動填寫';
