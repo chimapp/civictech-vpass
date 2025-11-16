@@ -82,25 +82,43 @@
                         </dl>
                     </div>
 
-                    <div style="display: flex; flex-wrap: gap: 0.75rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-mist);">
-                        <a href="/channels/{{ issuer.id }}/claim" class="btn btn-primary btn-sm" style="flex: 1;">
-                            <i class="bi bi-credit-card-2-front"></i>
-                            <span>領取卡片</span>
-                        </a>
-                        <a href="/issuers/{{ issuer.id }}/edit" class="btn btn-ghost btn-sm">
+                    <!-- Primary Action: Claim Card -->
+                    <a href="/channels/{{ issuer.id }}/claim" class="issuer-primary-action">
+                        <div class="action-content">
+                            <div class="action-icon-wrapper">
+                                <i class="bi bi-credit-card-2-front"></i>
+                            </div>
+                            <div class="action-text">
+                                <span class="action-label">領取卡片</span>
+                                <span class="action-hint">為會員發行數位驗證卡</span>
+                            </div>
+                        </div>
+                        <i class="bi bi-arrow-right action-arrow"></i>
+                        <div class="action-shimmer"></div>
+                    </a>
+
+                    <!-- Secondary Actions Bar -->
+                    <div class="issuer-secondary-actions">
+                        <a href="/issuers/{{ issuer.id }}/edit" class="secondary-action-btn">
                             <i class="bi bi-pencil-fill"></i>
-                            <span>編輯</span>
+                            <span>編輯設定</span>
                         </a>
-                        <form action="/issuers/{{ issuer.id }}/toggle" method="POST" style="display: inline;">
-                            <button type="submit" class="btn btn-accent btn-sm">
-                                {% if issuer.is_active %}
+
+                        <form action="/issuers/{{ issuer.id }}/toggle" method="POST" class="state-control-form"
+                              {% if issuer.is_active %}
+                              onsubmit="return confirm('確定要停用「{{ issuer.channel_name }}」嗎？\n\n停用後將無法發行新的會員卡，直到重新啟用。');"
+                              {% endif %}>
+                            {% if issuer.is_active %}
+                                <button type="submit" class="state-control-btn state-deactivate">
                                     <i class="bi bi-pause-circle-fill"></i>
-                                    <span>停用</span>
-                                {% else %}
+                                    <span>停用發行者</span>
+                                </button>
+                            {% else %}
+                                <button type="submit" class="state-control-btn state-activate">
                                     <i class="bi bi-play-circle-fill"></i>
-                                    <span>啟用</span>
-                                {% endif %}
-                            </button>
+                                    <span>啟用發行者</span>
+                                </button>
+                            {% endif %}
                         </form>
                     </div>
                 </div>
@@ -123,6 +141,268 @@
 /* Limit stagger animations */
 .stagger-7, .stagger-8, .stagger-9, .stagger-10 {
     animation-delay: 0.6s;
+}
+
+/* ===========================
+   REFINED ISSUER CARD ACTIONS
+   =========================== */
+
+/* Primary Action Button */
+.issuer-primary-action {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    padding: 1.5rem 1.75rem;
+    margin-top: 1.5rem;
+    background: linear-gradient(135deg, var(--color-ink) 0%, #2a3052 100%);
+    border: none;
+    border-radius: 12px;
+    text-decoration: none;
+    color: white;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(26, 31, 58, 0.15);
+}
+
+.issuer-primary-action::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-coral) 100%);
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.issuer-primary-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26, 31, 58, 0.25);
+}
+
+.issuer-primary-action:hover::before {
+    opacity: 1;
+}
+
+.action-shimmer {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.issuer-primary-action:hover .action-shimmer {
+    left: 100%;
+}
+
+.action-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.action-icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    font-size: 1.5rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.issuer-primary-action:hover .action-icon-wrapper {
+    background: rgba(255, 255, 255, 0.25);
+    transform: rotate(-5deg) scale(1.05);
+}
+
+.action-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.action-label {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.action-hint {
+    font-size: 0.8125rem;
+    opacity: 0.85;
+    font-weight: 500;
+}
+
+.action-arrow {
+    position: relative;
+    z-index: 1;
+    font-size: 1.5rem;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.issuer-primary-action:hover .action-arrow {
+    transform: translateX(4px);
+}
+
+/* Secondary Actions Bar */
+.issuer-secondary-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-mist);
+}
+
+.secondary-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: white;
+    border: 2px solid var(--color-mist);
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-slate);
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.secondary-action-btn:hover {
+    border-color: var(--color-cyan);
+    color: var(--color-cyan);
+    background: rgba(0, 217, 255, 0.05);
+    transform: translateY(-1px);
+}
+
+.secondary-action-btn i {
+    font-size: 1rem;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.secondary-action-btn:hover i {
+    transform: rotate(-5deg);
+}
+
+/* State Control Form & Button */
+.state-control-form {
+    margin-left: auto;
+}
+
+.state-control-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.75rem 1.25rem;
+    background: white;
+    border: 2px solid var(--color-mist);
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.state-control-btn i {
+    font-size: 1.125rem;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Activate State - Positive Action */
+.state-activate {
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.state-activate:hover {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.state-activate:hover i {
+    transform: scale(1.1);
+}
+
+/* Deactivate State - Warning/Destructive Action */
+.state-deactivate {
+    color: var(--color-coral);
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+.state-deactivate:hover {
+    border-color: var(--color-coral);
+    background: rgba(255, 107, 107, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+}
+
+.state-deactivate:hover i {
+    transform: scale(1.1);
+}
+
+.state-control-btn:active {
+    transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .issuer-primary-action {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .action-icon-wrapper {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+
+    .action-label {
+        font-size: 1rem;
+    }
+
+    .action-hint {
+        font-size: 0.75rem;
+    }
+
+    .issuer-secondary-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .secondary-action-btn,
+    .state-control-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .state-control-form {
+        margin-left: 0;
+    }
 }
 </style>
 {% endblock %}
