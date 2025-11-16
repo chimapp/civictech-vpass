@@ -3,36 +3,41 @@
 {% block title %}領取卡片 - VPass{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁">
-    <a href="/issuers">返回</a>
+<nav aria-label="上一頁" class="mb-3">
+    <a class="btn btn-link px-0" href="/issuers">&larr; 返回</a>
 </nav>
 
-<header>
-    <h1>領取卡片</h1>
-    <p>會員驗證</p>
-</header>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <section class="app-section">
+            <header class="mb-3">
+                <p class="text-uppercase text-primary fw-semibold mb-1">會員驗證</p>
+                <h1 class="h3 mb-1">領取卡片</h1>
+                <p class="text-secondary mb-0">{{ issuer.channel_name }}</p>
+            </header>
+            <p class="text-secondary small">
+                {{ issuer.channel_handle.as_deref().unwrap_or(issuer.youtube_channel_id.as_str()) }}
+            </p>
+        </section>
+    </div>
 
-<section aria-label="頻道資訊">
-    <h2>{{ issuer.channel_name }}</h2>
-    <p>{{ issuer.channel_handle.as_deref().unwrap_or(issuer.youtube_channel_id.as_str()) }}</p>
-</section>
-
+    <div class="col-lg-6">
 {% match is_authenticated %}
     {% when false %}
-        <section aria-label="登入提示">
-            <h2>操作步驟</h2>
+        <section aria-label="登入提示" class="app-section">
+            <h2 class="h5">操作步驟</h2>
             <p>要領取 <strong>{{ issuer.channel_name }}</strong> 的會員卡片，請完成以下步驟：</p>
-            <ol>
+            <ol class="ps-3">
                 <li>使用您的 YouTube 帳號登入。</li>
                 <li>在驗證影片下留言。</li>
                 <li>回到這裡並貼上留言網址。</li>
             </ol>
-            <p><a href="/auth/youtube/login?return_url=/channels/{{ issuer_id }}/claim">使用 YouTube 登入</a></p>
+            <a class="btn btn-primary mt-3" href="/auth/youtube/login?return_url=/channels/{{ issuer_id }}/claim">使用 YouTube 登入</a>
         </section>
     {% when true %}
-        <section aria-label="操作說明">
-            <h2>操作說明</h2>
-            <ol>
+        <section aria-label="操作說明" class="app-section">
+            <h2 class="h5">操作說明</h2>
+            <ol class="ps-3">
                 <li>前往該頻道的會員專屬驗證影片。</li>
                 <li>留下評論（任何文字都可以）。</li>
                 <li>複製留言網址。</li>
@@ -40,10 +45,15 @@
             </ol>
         </section>
 
-        <form action="/channels/{{ issuer.id }}/claim" method="POST">
-            <label for="comment_link">留言網址或 ID</label>
-            <input type="text" name="comment_link" id="comment_link" required placeholder="https://www.youtube.com/watch?v=...&lc=...">
-            <button type="submit">發行卡片</button>
+        <form action="/channels/{{ issuer.id }}/claim" method="POST" class="app-section mt-4">
+            <div class="mb-3">
+                <label class="form-label" for="comment_link">留言網址或 ID</label>
+                <input type="text" class="form-control" name="comment_link" id="comment_link" required placeholder="https://www.youtube.com/watch?v=...&lc=...">
+                <div class="form-text">貼上含有您留言 ID 的完整網址。</div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">發行卡片</button>
         </form>
 {% endmatch %}
+    </div>
+</div>
 {% endblock %}

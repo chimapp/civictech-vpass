@@ -2,72 +2,82 @@
 
 {% block title %}驗證 - {{ event.event_name }}{% endblock %}
 
+{% block container_class %}container-xl{% endblock %}
+
 {% block content %}
-<section>
-    <nav aria-label="上一頁">
-        <a href="/verify">&larr; 返回活動</a>
+<section class="mb-4">
+    <nav aria-label="上一頁" class="mb-3">
+        <a class="btn btn-link px-0" href="/verify">&larr; 返回活動</a>
     </nav>
 
-    <header>
-        <h1>{{ event.event_name }}</h1>
-        <p>{{ issuer.channel_name }}</p>
+    <header class="app-section mb-0">
+        <p class="text-uppercase text-primary fw-semibold mb-1">{{ issuer.channel_name }}</p>
+        <h1 class="h3 mb-0">{{ event.event_name }}</h1>
     </header>
-
-    <section id="instructions" aria-label="驗證步驟">
-        <h2>如何驗證會員身份</h2>
-        <ol>
-            <li>在手機上開啟數位皮夾應用程式。</li>
-            <li>向參與者展示下方的 QR Code。</li>
-            <li>請他們使用數位皮夾應用程式掃描。</li>
-            <li>等待驗證結果出現。</li>
-        </ol>
-    </section>
-
-    <section id="qr-container" aria-label="驗證 QR Code">
-        <div id="loading">
-            <p>產生 QR Code 中...</p>
-        </div>
-
-        <div id="qr-display" hidden>
-            <figure>
-                <img id="qr-image" alt="驗證 QR Code">
-                <figcaption id="timer">
-                    到期時間： <span id="countdown">5:00</span>
-                </figcaption>
-            </figure>
-            <button id="refresh-btn" type="button" hidden onclick="requestNewQR()">產生新的 QR Code</button>
-        </div>
-    </section>
-
-    <section id="result-container" aria-label="驗證結果">
-        <div id="pending-status" hidden>
-            <p>等待掃描中...</p>
-            <p>請參與者掃描 QR Code</p>
-        </div>
-
-        <div id="success-result" hidden>
-            <h3>驗證成功</h3>
-            <div id="member-info"></div>
-            <button type="button" onclick="requestNewQR()">驗證下一位</button>
-        </div>
-
-        <div id="failed-result" hidden>
-            <h3>驗證失敗</h3>
-            <p id="error-message"></p>
-            <button type="button" onclick="requestNewQR()">再試一次</button>
-        </div>
-
-        <div id="expired-result" hidden>
-            <h3>QR Code 已過期</h3>
-            <p>為了安全，QR Code 會在 5 分鐘後過期。</p>
-            <button type="button" onclick="requestNewQR()">產生新的 QR Code</button>
-        </div>
-    </section>
-
-    <p>
-        <a href="/verify/{{ event.id }}/history">查看驗證歷史記錄</a>
-    </p>
 </section>
+
+<div class="row gx-4 gy-4 align-items-start">
+    <div class="col-lg-4">
+        <section id="instructions" aria-label="驗證步驟" class="app-section h-100">
+            <h2 class="h5 mb-3">如何驗證會員身份</h2>
+            <ol class="ps-3 mb-0">
+                <li class="mb-2">在手機上開啟數位皮夾應用程式。</li>
+                <li class="mb-2">向參與者展示右側的 QR Code。</li>
+                <li class="mb-2">請他們使用數位皮夾應用程式掃描。</li>
+                <li class="mb-0">等待驗證結果出現。</li>
+            </ol>
+            <div class="mt-4">
+                <a class="btn btn-outline-secondary w-100" href="/verify/{{ event.id }}/history">查看驗證歷史記錄</a>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-lg-8">
+        <section id="qr-container" class="app-section mb-4" aria-label="驗證 QR Code">
+            <div id="loading" class="text-center text-secondary py-5">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mb-0">產生 QR Code 中...</p>
+            </div>
+
+            <div id="qr-display" class="text-center" hidden>
+                <figure class="mb-3">
+                    <img id="qr-image" class="img-fluid rounded shadow-sm" alt="驗證 QR Code">
+                    <figcaption id="timer" class="text-secondary mt-2">
+                        到期時間： <span id="countdown" class="fw-semibold">5:00</span>
+                    </figcaption>
+                </figure>
+                <button id="refresh-btn" type="button" class="btn btn-outline-secondary" hidden onclick="requestNewQR()">產生新的 QR Code</button>
+            </div>
+        </section>
+
+        <section id="result-container" class="app-section" aria-label="驗證結果">
+            <div id="pending-status" class="alert alert-info text-center" hidden>
+                <p class="mb-1">等待掃描中...</p>
+                <p class="mb-0">請參與者掃描 QR Code</p>
+            </div>
+
+            <div id="success-result" class="alert alert-success" hidden>
+                <h3 class="h5">驗證成功</h3>
+                <div id="member-info" class="mb-3"></div>
+                <button type="button" class="btn btn-success" onclick="requestNewQR()">驗證下一位</button>
+            </div>
+
+            <div id="failed-result" class="alert alert-danger" hidden>
+                <h3 class="h5">驗證失敗</h3>
+                <p id="error-message" class="mb-3"></p>
+                <button type="button" class="btn btn-danger" onclick="requestNewQR()">再試一次</button>
+            </div>
+
+            <div id="expired-result" class="alert alert-warning" hidden>
+                <h3 class="h5">QR Code 已過期</h3>
+                <p>為了安全，QR Code 會在 5 分鐘後過期。</p>
+                <button type="button" class="btn btn-warning" onclick="requestNewQR()">產生新的 QR Code</button>
+            </div>
+        </section>
+    </div>
+</div>
 
 <script>
 const eventId = "{{ event.id }}";

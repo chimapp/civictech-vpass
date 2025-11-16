@@ -1,45 +1,44 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>領取會員卡 - VPass</title>
-</head>
-<body>
-    <main>
-        <h1>領取會員卡</h1>
+{% extends "base.html" %}
 
-        <!-- TODO: T036 - Implement card claiming interface -->
-        <section aria-label="登入方式">
-            <ul>
-                <li><a href="/auth/youtube/login">使用 YouTube 登入</a></li>
-                <li><a href="/auth/twitch/login">使用 Twitch 登入</a></li>
-            </ul>
+{% block title %}領取會員卡 - VPass{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-5">
+        <section class="app-section">
+            <h1 class="h3 mb-3">領取會員卡</h1>
+            <p class="text-secondary">選擇登入方式以繼續。</p>
+            <div class="list-group mb-3" aria-label="登入方式">
+                <a class="list-group-item list-group-item-action" href="/auth/youtube/login">使用 YouTube 登入</a>
+                <a class="list-group-item list-group-item-action" href="/auth/twitch/login">使用 Twitch 登入</a>
+            </div>
+            <div class="alert alert-info mb-0">
+                登入後即可查看及下載您的會員卡。
+            </div>
         </section>
+    </div>
 
-        <section id="card-display" hidden>
-            <!-- Card will be rendered here after authentication -->
+    <div class="col-lg-7">
+        <section id="card-display" class="app-section text-center" hidden>
             <article>
-                <h2 id="card-issuer">頻道名稱</h2>
-                <div id="qr-code">
+                <h2 id="card-issuer" class="h4">頻道名稱</h2>
+                <div id="qr-code" class="my-4">
                     <!-- QR code SVG will be inserted here -->
                 </div>
-                <p>會員身份: <span id="member-level">基本會員</span></p>
-                <p>有效期限: <span id="expiry-date">2024-12-31</span></p>
+                <p class="mb-1">會員身份: <span id="member-level" class="fw-semibold">基本會員</span></p>
+                <p class="text-secondary">有效期限: <span id="expiry-date">2024-12-31</span></p>
             </article>
 
-            <p>
-                <button type="button" onclick="downloadCard()">下載 QR Code</button>
-            </p>
+            <button type="button" class="btn btn-outline-primary mt-3" onclick="downloadCard()">下載 QR Code</button>
         </section>
-    </main>
+    </div>
+</div>
+{% endblock %}
 
+{% block extra_scripts %}
     <script>
-        // TODO: T036 - Implement card claiming logic
         function downloadCard() {
-            // Download QR code as PNG
             console.log('Download card functionality - TODO');
         }
     </script>
-</body>
-</html>
+{% endblock %}

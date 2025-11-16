@@ -1,0 +1,98 @@
+body {
+    font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #212529;
+}
+
+.toast-root {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 1080;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.toast-root .toast {
+    min-width: 240px;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    background-color: rgba(7, 51, 84, 0.95);
+    color: #fff;
+    box-shadow: 0 0.5rem 1rem rgba(12, 44, 64, 0.35);
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast-root .toast.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-root .toast-success {
+    background-color: rgba(25, 135, 84, 0.95);
+}
+
+.toast-root .toast-error {
+    background-color: rgba(220, 53, 69, 0.95);
+}
+
+[data-role="spinner"].spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+[data-credential-status] {
+    border-radius: 1rem;
+    border: 1px solid rgba(13, 110, 253, 0.15);
+    padding: 1.5rem;
+    background-color: #f8fafc;
+}
+
+.status-refresh-button {
+    margin-top: 0.75rem;
+    border: 1px solid #0d6efd;
+    color: #0d6efd;
+    background: transparent;
+    border-radius: 999px;
+    padding: 0.4rem 1rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.status-refresh-button:hover {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+.app-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.app-section {
+    background-color: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 1rem 2rem rgba(15, 20, 34, 0.04);
+    border: 1px solid rgba(12, 152, 217, 0.08);
+}
+
+.app-section + .app-section {
+    margin-top: 1.5rem;
+}
+
+.app-table-wrapper {
+    background-color: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.04);
+}
+
+.app-pagination {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}

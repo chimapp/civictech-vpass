@@ -3,36 +3,43 @@
 {% block title %}我的卡片 - VPass{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁">
-    <a href="/">返回</a>
+<nav aria-label="上一頁" class="mb-3">
+    <a class="btn btn-link px-0" href="/">&larr; 返回</a>
 </nav>
 
-<header>
-    <h1>我的卡片</h1>
-    <p>會員收藏</p>
-</header>
+<section class="app-section">
+    <header class="mb-4">
+        <h1 class="h3 mb-1">我的卡片</h1>
+        <p class="text-secondary mb-0">會員收藏</p>
+    </header>
 
-{% if let Some(msg) = success_message %}
-    <p role="status">{{ msg }}</p>
-{% endif %}
+    {% if let Some(msg) = success_message %}
+        <div class="alert alert-success" role="status">
+            {{ msg }}
+        </div>
+    {% endif %}
 
-{% if cards.is_empty() %}
-    <p>您還沒有任何卡片。 <a href="/issuers">瀏覽頻道</a></p>
-{% else %}
-    <ul>
-        {% for card in cards %}
-            <li>
-                <article>
-                    <h2><a href="/cards/{{ card.id }}">{{ card.membership_level_label }}</a></h2>
-                    <dl>
-                        <dt>已確認</dt>
-                        <dd>{{ card.membership_confirmed_at.format("%Y-%m-%d") }}</dd>
-                        <dt>已發行</dt>
-                        <dd>{{ card.issued_at.format("%Y-%m-%d") }}</dd>
-                    </dl>
-                </article>
-            </li>
-        {% endfor %}
-    </ul>
-{% endif %}
+    {% if cards.is_empty() %}
+        <div class="alert alert-info">
+            您還沒有任何卡片。 <a href="/issuers" class="alert-link">瀏覽頻道</a>
+        </div>
+    {% else %}
+        <div class="list-group">
+            {% for card in cards %}
+                <a class="list-group-item list-group-item-action" href="/cards/{{ card.id }}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="h5 mb-1">{{ card.membership_level_label }}</h2>
+                            <small class="text-secondary">卡片 ID：{{ card.id }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge text-bg-primary mb-1">已確認 {{ card.membership_confirmed_at.format("%Y-%m-%d") }}</span>
+                            <div class="text-secondary small">已發行 {{ card.issued_at.format("%Y-%m-%d") }}</div>
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
 {% endblock %}

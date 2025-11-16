@@ -3,39 +3,51 @@
 {% block title %}編輯發行者 - VPass{% endblock %}
 
 {% block content %}
-    <nav aria-label="上一頁">
-        <a href="/issuers">返回發行者</a>
+    <nav aria-label="上一頁" class="mb-3">
+        <a class="btn btn-link px-0" href="/issuers">&larr; 返回發行者</a>
     </nav>
 
-    <header>
-        <h1>編輯發行者</h1>
-        <p>更新發行者資訊</p>
+    <header class="mb-4">
+        <h1 class="h3 mb-1">編輯發行者</h1>
+        <p class="text-secondary mb-0">更新發行者資訊</p>
     </header>
 
-    <form action="/issuers/{{ issuer.id }}" method="POST">
-        <section aria-label="基本資訊">
-            <label for="youtube_channel_id">YouTube Channel ID</label>
-            <input type="text" id="youtube_channel_id" value="{{ issuer.youtube_channel_id }}" readonly>
-            <p>Channel ID 無法變更</p>
+    <form action="/issuers/{{ issuer.id }}" method="POST" class="app-section row g-3">
+        <div class="col-md-6">
+            <label class="form-label" for="youtube_channel_id">YouTube Channel ID</label>
+            <input type="text" class="form-control" id="youtube_channel_id" value="{{ issuer.youtube_channel_id }}" readonly>
+            <div class="form-text">Channel ID 無法變更</div>
+        </div>
 
-            <label for="channel_name">頻道名稱</label>
-            <input type="text" name="channel_name" id="channel_name" value="{{ issuer.channel_name }}">
+        <div class="col-md-6">
+            <label class="form-label" for="channel_name">頻道名稱</label>
+            <input type="text" class="form-control" name="channel_name" id="channel_name" value="{{ issuer.channel_name }}">
+        </div>
 
-            <label for="channel_handle">頻道代號</label>
-            <input type="text" name="channel_handle" id="channel_handle" value="{{ issuer.channel_handle.as_deref().unwrap_or("") }}">
+        <div class="col-md-6">
+            <label class="form-label" for="channel_handle">頻道代號</label>
+            <input type="text" class="form-control" name="channel_handle" id="channel_handle" value="{{ issuer.channel_handle.as_deref().unwrap_or("") }}">
+        </div>
 
-            <label for="verification_video_id">驗證影片 ID</label>
-            <input type="text" name="verification_video_id" id="verification_video_id" value="{{ issuer.verification_video_id }}">
-            <p>會員將在此影片發布驗證留言。</p>
+        <div class="col-md-6">
+            <label class="form-label" for="verification_video_id">驗證影片 ID</label>
+            <input type="text" class="form-control" name="verification_video_id" id="verification_video_id" value="{{ issuer.verification_video_id }}">
+            <div class="form-text">會員將在此影片發布驗證留言。</div>
+        </div>
 
-            <label for="default_membership_label">預設會員標籤</label>
-            <input type="text" name="default_membership_label" id="default_membership_label" value="{{ issuer.default_membership_label }}">
+        <div class="col-md-6">
+            <label class="form-label" for="default_membership_label">預設會員標籤</label>
+            <input type="text" class="form-control" name="default_membership_label" id="default_membership_label" value="{{ issuer.default_membership_label }}">
+        </div>
 
-            <label for="vc_uid">Taiwan Digital Wallet VC UID</label>
-            <input type="text" name="vc_uid" id="vc_uid" value="{{ issuer.vc_uid.as_deref().unwrap_or("") }}" placeholder="例如：0019930579_hoshiyomi">
-            <p>選填：用於 Taiwan Digital Wallet QR code 產生的 VC UID。</p>
-        </section>
+        <div class="col-md-6">
+            <label class="form-label" for="vc_uid">Taiwan Digital Wallet VC UID</label>
+            <input type="text" class="form-control" name="vc_uid" id="vc_uid" value="{{ issuer.vc_uid.as_deref().unwrap_or("") }}" placeholder="例如：0019930579_hoshiyomi">
+            <div class="form-text">選填：用於 Taiwan Digital Wallet QR code 產生的 VC UID。</div>
+        </div>
 
-        <button type="submit">更新發行者</button>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary w-100">更新發行者</button>
+        </div>
     </form>
 {% endblock %}

@@ -3,35 +3,49 @@
 {% block title %}建立活動{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁">
-    <a href="/events">返回活動</a>
+<nav aria-label="上一頁" class="mb-3">
+    <a class="btn btn-link px-0" href="/events">&larr; 返回活動</a>
 </nav>
 
-<header>
-    <h1>建立新活動</h1>
-    <p>活動詳情</p>
-</header>
+<section class="app-section">
+    <header class="mb-4">
+        <h1 class="h3 mb-1">建立新活動</h1>
+        <p class="text-secondary mb-0">活動詳情</p>
+    </header>
 
-<form method="post" action="/events/create">
-    <label for="issuer_id">頻道：</label>
-    <select name="issuer_id" id="issuer_id" required>
-        {% for issuer in issuers %}
-        <option value="{{ issuer.id }}">{{ issuer.channel_name }}</option>
-        {% endfor %}
-    </select>
+    <form method="post" action="/events/create" class="row g-3">
+        <div class="col-12">
+            <label class="form-label" for="issuer_id">頻道</label>
+            <select class="form-select" name="issuer_id" id="issuer_id" required>
+                {% for issuer in issuers %}
+                <option value="{{ issuer.id }}">{{ issuer.channel_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <label for="event_name">活動名稱：</label>
-    <input type="text" name="event_name" id="event_name" required>
+        <div class="col-md-6">
+            <label class="form-label" for="event_name">活動名稱</label>
+            <input class="form-control" type="text" name="event_name" id="event_name" required>
+        </div>
 
-    <label for="event_date">活動日期：</label>
-    <input type="date" name="event_date" id="event_date" required>
+        <div class="col-md-6">
+            <label class="form-label" for="event_date">活動日期</label>
+            <input class="form-control" type="date" name="event_date" id="event_date" required>
+        </div>
 
-    <label for="event_location">地點：</label>
-    <input type="text" name="event_location" id="event_location">
+        <div class="col-md-6">
+            <label class="form-label" for="event_location">地點</label>
+            <input class="form-control" type="text" name="event_location" id="event_location" placeholder="線上 / 實體地點">
+        </div>
 
-    <label for="event_description">描述：</label>
-    <textarea name="event_description" id="event_description" rows="4"></textarea>
+        <div class="col-12">
+            <label class="form-label" for="event_description">描述</label>
+            <textarea class="form-control" name="event_description" id="event_description" rows="4" placeholder="選填：活動簡介"></textarea>
+        </div>
 
-    <button type="submit">建立活動</button>
-</form>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary w-100">建立活動</button>
+        </div>
+    </form>
+</section>
 {% endblock %}

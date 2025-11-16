@@ -3,22 +3,27 @@
 {% block title %}卡片 - VPass{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁">
-    <a href="/cards/my-cards">返回我的卡片</a>
+<nav aria-label="上一頁" class="mb-3">
+    <a class="btn btn-link px-0" href="/cards/my-cards">&larr; 返回我的卡片</a>
 </nav>
 
-{% if card.is_expired() %}
-    <p role="status">已過期</p>
-{% else %}
-    <p role="status">有效卡片</p>
-{% endif %}
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="app-section">
+            {% if card.is_expired() %}
+                <div class="alert alert-danger" role="status">已過期</div>
+            {% else %}
+                <div class="alert alert-success" role="status">有效卡片</div>
+            {% endif %}
 
 {% if !card.is_expired() && card.wallet_qr_code.is_some() %}
     {% let cid_present = card.wallet_cid.is_some() %}
-    <section data-credential-status data-poll-url="/cards/{{ card.id }}/poll-credential" data-cid-present="{{ cid_present }}" data-max-polls="150" aria-live="polite">
-        <p>
-            <span data-role="spinner"></span>
-            <span data-role="status-text">
+            <section class="mt-3" data-credential-status data-poll-url="/cards/{{ card.id }}/poll-credential" data-cid-present="{{ cid_present }}" data-max-polls="150" aria-live="polite">
+                <p class="d-flex align-items-center gap-2">
+                    <span class="spinner-border text-primary" data-role="spinner" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </span>
+                    <span data-role="status-text">
                 {% if cid_present %}
                     憑證已發行！
                 {% else %}
@@ -26,14 +31,14 @@
                 {% endif %}
             </span>
         </p>
-        <p>
+                <p class="mb-2">
             {% if cid_present %}
                 憑證已在您的數位皮夾中準備就緒。
             {% else %}
                 請使用數位皮夾應用程式掃描 QR Code。
             {% endif %}
         </p>
-        <p data-role="poll-info">
+                <p data-role="poll-info" class="text-secondary small mb-0">
             {% if cid_present %}
                 憑證已準備就緒。
             {% else %}
@@ -43,53 +48,56 @@
     </section>
 {% endif %}
 
-<section aria-label="卡片內容">
-    <h2>{{ card.membership_level_label }}</h2>
+            <section aria-label="卡片內容" class="mt-4">
+                <h2 class="h4">{{ card.membership_level_label }}</h2>
 
     {% if card.is_expired() %}
-        <p>卡片已過期</p>
+                    <p class="text-danger">卡片已過期</p>
     {% else if let Some(qr_code) = card.wallet_qr_code.as_deref() %}
         {% if card.wallet_cid.is_none() %}
-            <figure>
-                <img src="{{ qr_code }}" alt="數位皮夾 QR Code">
-                <figcaption>使用數位皮夾掃描</figcaption>
+                        <figure class="text-center">
+                            <img class="img-fluid rounded shadow-sm mb-2" src="{{ qr_code }}" alt="數位皮夾 QR Code">
+                            <figcaption class="text-secondary small">使用數位皮夾掃描</figcaption>
             </figure>
         {% else %}
-            <p>憑證已發行</p>
+                        <p class="text-success">憑證已發行</p>
         {% endif %}
     {% else %}
-        <p>QR Code 無法使用</p>
+                    <p class="text-danger">QR Code 無法使用</p>
     {% endif %}
 </section>
+        </div>
+    </div>
 
-<section aria-label="卡片資訊">
-    <dl>
-        <dt>已確認</dt>
-        <dd>{{ card.membership_confirmed_at.format("%Y-%m-%d %H:%M UTC") }}</dd>
-        <dt>已發行</dt>
-        <dd>{{ card.issued_at.format("%Y-%m-%d %H:%M UTC") }}</dd>
+    <div class="col-lg-6">
+        <section class="app-section" aria-label="卡片資訊">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">已確認</dt>
+                <dd class="col-sm-8">{{ card.membership_confirmed_at.format("%Y-%m-%d %H:%M UTC") }}</dd>
+                <dt class="col-sm-4">已發行</dt>
+                <dd class="col-sm-8">{{ card.issued_at.format("%Y-%m-%d %H:%M UTC") }}</dd>
         {% if let Some(expires_at) = card.expires_at %}
-            <dt>到期日</dt>
-            <dd>{{ expires_at.format("%Y-%m-%d") }}</dd>
+                <dt class="col-sm-4">到期日</dt>
+                <dd class="col-sm-8">{{ expires_at.format("%Y-%m-%d") }}</dd>
         {% endif %}
-        <dt>卡片 ID</dt>
-        <dd>{{ card.id }}</dd>
-    </dl>
-</section>
+                <dt class="col-sm-4">卡片 ID</dt>
+                <dd class="col-sm-8">{{ card.id }}</dd>
+            </dl>
+        </section>
 
-<section aria-label="可用操作">
-    <ul>
+        <section class="app-section mt-4" aria-label="可用操作">
+            <div class="d-flex flex-wrap gap-2">
         {% if card.wallet_cid.is_none() %}
             {% if let Some(deep_link) = card.wallet_deep_link.as_deref() %}
-                <li><a href="{{ deep_link }}">在數位皮夾應用程式中開啟</a></li>
+                    <a class="btn btn-outline-primary" href="{{ deep_link }}">在數位皮夾應用程式中開啟</a>
             {% endif %}
         {% endif %}
-        <li><a href="/cards/my-cards">查看所有卡片</a></li>
-        <li>
-            <button type="button" data-delete-card="{{ card.id }}">刪除卡片</button>
-        </li>
-    </ul>
-</section>
+                <a class="btn btn-outline-secondary" href="/cards/my-cards">查看所有卡片</a>
+                <button type="button" class="btn btn-outline-danger" data-delete-card="{{ card.id }}">刪除卡片</button>
+            </div>
+        </section>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}

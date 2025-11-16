@@ -3,37 +3,43 @@
 {% block title %}活動{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁">
-    <a href="/">返回</a>
+<nav aria-label="上一頁" class="mb-3">
+    <a class="btn btn-link px-0" href="/">&larr; 返回</a>
 </nav>
 
-<header>
-    <h1>活動</h1>
-    <p>管理活動</p>
-</header>
+<section class="app-section mb-4">
+    <header class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+        <div>
+            <h1 class="h3 mb-1">活動</h1>
+            <p class="text-secondary mb-0">管理活動</p>
+        </div>
+        <a class="btn btn-primary" href="/events/new">建立新活動</a>
+    </header>
+</section>
 
 {% if events.is_empty() %}
-    <p>找不到活動。 <a href="/events/new">建立新活動</a></p>
+    <div class="alert alert-info">找不到活動。 <a class="alert-link" href="/events/new">建立新活動</a></div>
 {% else %}
-    <p><a href="/events/new">建立新活動</a></p>
-    <ul>
+    <div class="row row-cols-1 row-cols-md-2 g-3">
         {% for event in events %}
-            <li>
-                <article>
-                    <h2><a href="/events/{{ event.id }}">{{ event.event_name }}</a></h2>
-                    <dl>
-                        <dt>日期</dt>
-                        <dd>{{ event.event_date }}</dd>
+            <div class="col">
+                <article class="card h-100">
+                    <div class="card-body">
+                        <h2 class="h5 card-title"><a class="stretched-link text-decoration-none" href="/events/{{ event.id }}">{{ event.event_name }}</a></h2>
+                        <dl class="row mb-0 text-secondary small">
+                            <dt class="col-4">日期</dt>
+                            <dd class="col-8 text-body">{{ event.event_date }}</dd>
                         {% match event.event_location %}
                             {% when Some with (loc) %}
-                                <dt>地點</dt>
-                                <dd>{{ loc }}</dd>
+                                <dt class="col-4">地點</dt>
+                                <dd class="col-8 text-body">{{ loc }}</dd>
                             {% when None %}
                         {% endmatch %}
-                    </dl>
+                        </dl>
+                    </div>
                 </article>
-            </li>
+            </div>
         {% endfor %}
-    </ul>
+    </div>
 {% endif %}
 {% endblock %}

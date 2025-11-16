@@ -3,55 +3,73 @@
 {% block title %}驗證歷史記錄 - {{ event.event_name }}{% endblock %}
 
 {% block content %}
-<section>
-    <h1>驗證歷史記錄</h1>
-    <h2>{{ event.event_name }} - {{ issuer.channel_name }}</h2>
-
-    <table>
-        <thead>
-            <tr>
-                <th>時間</th>
-                <th>結果</th>
-                <th>會員</th>
-                <th>卡片 ID</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for ve in events %}
-            <tr>
-                <td>{{ ve.event.verified_at }}</td>
-                <td>{{ ve.event.verification_result }}</td>
-                <td>
-                    {% match ve.member %}
-                        {% when Some with (m) %}
-                            {{ m.default_display_name }}
-                        {% when None %}
-                            N/A
-                    {% endmatch %}
-                </td>
-                <td>
-                    {% match ve.card %}
-                        {% when Some with (c) %}
-                            {{ c.id }}
-                        {% when None %}
-                            N/A
-                    {% endmatch %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <p>
-        第 {{ page }} 頁，共 {{ (total + per_page - 1) / per_page }} 頁
-    </p>
-    <p>
-        {% if page > 1 %}
-            <a href="?page={{ page - 1 }}">上一頁</a>
-        {% endif %}
-        {% if page * per_page < total %}
-            <a href="?page={{ page + 1 }}">下一頁</a>
-        {% endif %}
-    </p>
+<section class="app-section mb-4">
+    <h1 class="h3 mb-1">驗證歷史記錄</h1>
+    <p class="text-secondary mb-0">{{ event.event_name }} - {{ issuer.channel_name }}</p>
 </section>
+
+<div class="app-table-wrapper mb-3">
+    <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>時間</th>
+                    <th>結果</th>
+                    <th>會員</th>
+                    <th>卡片 ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ve in events %}
+                <tr>
+                    <td>{{ ve.event.verified_at }}</td>
+                    <td>
+                        <span class="badge {% if ve.event.verification_result == "success" %}text-bg-success{% else %}text-bg-danger{% endif %}">
+                            {{ ve.event.verification_result }}
+                        </span>
+                    </td>
+                    <td>
+                        {% match ve.member %}
+                            {% when Some with (m) %}
+                                {{ m.default_display_name }}
+                            {% when None %}
+                                N/A
+                        {% endmatch %}
+                    </td>
+                    <td>
+                        {% match ve.card %}
+                            {% when Some with (c) %}
+                                {{ c.id }}
+                            {% when None %}
+                                N/A
+                        {% endmatch %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <p class="mb-0">第 {{ page }} 頁，共 {{ (total + per_page - 1) / per_page }} 頁</p>
+    <nav aria-label="頁碼">
+        <ul class="pagination mb-0">
+            {% if page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page - 1 }}">上一頁</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">上一頁</span></li>
+            {% endif %}
+            {% if page * per_page < total %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page + 1 }}">下一頁</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">下一頁</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
 {% endblock %}

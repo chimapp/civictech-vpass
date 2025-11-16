@@ -20,9 +20,9 @@
   if (!toastRoot) {
     toastRoot = document.createElement('div');
     toastRoot.setAttribute('data-role', 'toast-root');
-    toastRoot.className = 'toast-container';
     document.body.appendChild(toastRoot);
   }
+  toastRoot.classList.add('toast-root');
 
   const toastState = {
     lastMessage: '',
@@ -54,6 +54,8 @@
       .filter(Boolean)
       .join(' ');
     toast.textContent = message;
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
 
     toastRoot.appendChild(toast);
 

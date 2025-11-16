@@ -1,29 +1,29 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>處理中... - VPass</title>
-</head>
-<body>
-    <main>
-        <h1>正在處理您的登入...</h1>
-        <p id="status-message">請稍候</p>
-    </main>
+{% extends "base.html" %}
 
+{% block title %}處理中... - VPass{% endblock %}
+
+{% block content %}
+<section class="d-flex flex-column align-items-center justify-content-center text-center" style="min-height: 60vh;">
+    <div class="app-section shadow-sm">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h1 class="h4">正在處理您的登入...</h1>
+        <p id="status-message" class="text-secondary mb-0">請稍候</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
     <script>
-        // TODO: T031, T032 - Handle OAuth callback
-        // This page is shown briefly while backend processes OAuth callback
-        // Backend will redirect to appropriate page after processing
-
-        // Check for error in URL params
         const urlParams = new URLSearchParams(window.location.search);
         const error = urlParams.get('error');
 
         if (error) {
-            document.getElementById('status-message').textContent =
-                '登入失敗: ' + (urlParams.get('error_description') || error);
+            const statusMessage = document.getElementById('status-message');
+            statusMessage.textContent = '登入失敗: ' + (urlParams.get('error_description') || error);
+            statusMessage.classList.remove('text-secondary');
+            statusMessage.classList.add('text-danger');
         }
     </script>
-</body>
-</html>
+{% endblock %}

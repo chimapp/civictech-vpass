@@ -3,37 +3,52 @@
 {% block title %}VPass{% endblock %}
 
 {% block content %}
-<section>
-    <header>
-        <h1>VPass</h1>
-        <p>頻道會員驗證</p>
-    </header>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <section class="app-section text-center">
+            <header class="mb-4">
+                <p class="text-uppercase text-primary fw-semibold mb-1">VPass</p>
+                <h1 class="fw-bold">頻道會員驗證</h1>
+                <p class="text-secondary mb-0">使用數位卡片驗證 YouTube 會員身份</p>
+            </header>
 
-    {% if is_authenticated %}
-        <nav aria-label="主要功能">
-            <ul>
-                <li><a href="/cards/my-cards">我的卡片</a></li>
-                <li><a href="/issuers">瀏覽頻道</a></li>
-                <li><a href="/events">活動</a></li>
-                <li><a href="/verify">驗證掃描器</a></li>
-            </ul>
-        </nav>
-
-        <form action="/auth/logout" method="POST">
-            <button type="submit">登出</button>
-        </form>
-
-        <p>您已登入 VPass</p>
-    {% else %}
-        <section>
-            <p>使用您的 YouTube 帳號登入以開始使用</p>
-            <nav aria-label="登入方式">
-                <ul>
-                    <li><a href="/auth/youtube/login">使用 YouTube 登入</a></li>
-                </ul>
-            </nav>
+            {% if is_authenticated %}
+                <p class="text-success fw-semibold">您已登入 VPass</p>
+                <div class="row row-cols-2 row-cols-md-4 g-3 mb-4" aria-label="主要功能">
+                    <div class="col">
+                        <a class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center" href="/cards/my-cards">
+                            我的卡片
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center" href="/issuers">
+                            瀏覽頻道
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center" href="/events">
+                            活動
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center" href="/verify">
+                            驗證掃描器
+                        </a>
+                    </div>
+                </div>
+                <form action="/auth/logout" method="POST" class="d-inline-block">
+                    <button type="submit" class="btn btn-danger">登出</button>
+                </form>
+            {% else %}
+                <div class="mb-4">
+                    <p class="lead mb-3">使用您的帳號登入以開始使用</p>
+                    <div class="d-flex flex-column gap-2 align-items-center">
+                        <a class="btn btn-primary px-4" href="/auth/youtube/login">使用 YouTube 登入</a>
+                    </div>
+                </div>
+                <p class="text-secondary">登入後即可領取與管理您的會員卡片</p>
+            {% endif %}
         </section>
-        <p>使用數位卡片驗證您的頻道會員身份</p>
-    {% endif %}
-</section>
+    </div>
+</div>
 {% endblock %}

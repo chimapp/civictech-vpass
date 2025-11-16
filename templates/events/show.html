@@ -3,54 +3,77 @@
 {% block title %}{{ event.event_name }}{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁">
-    <a href="/events">返回活動</a>
+<nav aria-label="上一頁" class="mb-3">
+    <a class="btn btn-link px-0" href="/events">&larr; 返回活動</a>
 </nav>
 
-<header>
-    <h1>{{ event.event_name }}</h1>
-    <p>活動詳情</p>
-</header>
+<section class="app-section mb-4">
+    <header class="mb-4">
+        <h1 class="h3 mb-1">{{ event.event_name }}</h1>
+        <p class="text-secondary mb-0">活動詳情</p>
+    </header>
 
-<section aria-label="活動資料">
-    <dl>
-        <dt>頻道</dt>
-        <dd>{{ issuer.channel_name }}</dd>
-        <dt>日期</dt>
-        <dd>{{ event.event_date }}</dd>
+    <dl class="row mb-0">
+        <dt class="col-sm-3">頻道</dt>
+        <dd class="col-sm-9">{{ issuer.channel_name }}</dd>
+        <dt class="col-sm-3">日期</dt>
+        <dd class="col-sm-9">{{ event.event_date }}</dd>
         {% match event.event_location %}
             {% when Some with (loc) %}
-                <dt>地點</dt>
-                <dd>{{ loc }}</dd>
+                <dt class="col-sm-3">地點</dt>
+                <dd class="col-sm-9">{{ loc }}</dd>
             {% when None %}
         {% endmatch %}
         {% match event.event_description %}
             {% when Some with (desc) %}
-                <dt>描述</dt>
-                <dd>{{ desc }}</dd>
+                <dt class="col-sm-3">描述</dt>
+                <dd class="col-sm-9">{{ desc }}</dd>
             {% when None %}
         {% endmatch %}
     </dl>
 </section>
 
-<section aria-label="驗證統計">
-    <h2>驗證統計</h2>
-    <dl>
-        <dt>總掃描次數</dt>
-        <dd>{{ stats.total_scans }}</dd>
-        <dt>成功</dt>
-        <dd>{{ stats.successful_scans }}</dd>
-        <dt>失敗</dt>
-        <dd>{{ stats.failed_scans }}</dd>
-        <dt>唯一卡片</dt>
-        <dd>{{ stats.unique_cards }}</dd>
-    </dl>
-</section>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <section class="app-section h-100" aria-label="驗證統計">
+            <h2 class="h5 mb-3">驗證統計</h2>
+            <div class="row text-center g-3">
+                <div class="col-6">
+                    <div class="border rounded-3 py-3">
+                        <p class="text-secondary small mb-1">總掃描次數</p>
+                        <p class="fs-4 fw-semibold">{{ stats.total_scans }}</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="border rounded-3 py-3">
+                        <p class="text-secondary small mb-1">唯一卡片</p>
+                        <p class="fs-4 fw-semibold">{{ stats.unique_cards }}</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="border rounded-3 py-3">
+                        <p class="text-success small mb-1">成功</p>
+                        <p class="fs-4 fw-semibold text-success">{{ stats.successful_scans }}</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="border rounded-3 py-3">
+                        <p class="text-danger small mb-1">失敗</p>
+                        <p class="fs-4 fw-semibold text-danger">{{ stats.failed_scans }}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
 
-<section aria-label="操作">
-    <ul>
-        <li><a href="/verify/{{ event.id }}/scanner">開始掃描器</a></li>
-        <li><a href="/verify/{{ event.id }}/history">查看歷史記錄</a></li>
-    </ul>
-</section>
+    <div class="col-lg-6">
+        <section class="app-section h-100" aria-label="操作">
+            <h2 class="h5 mb-3">操作</h2>
+            <div class="d-flex flex-column gap-2">
+                <a class="btn btn-primary" href="/verify/{{ event.id }}/scanner">開始掃描器</a>
+                <a class="btn btn-outline-secondary" href="/verify/{{ event.id }}/history">查看歷史記錄</a>
+            </div>
+        </section>
+    </div>
+</div>
 {% endblock %}

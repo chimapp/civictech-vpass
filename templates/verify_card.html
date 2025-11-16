@@ -1,50 +1,64 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>驗證會員卡 - VPass</title>
-</head>
-<body>
-    <main>
-        <h1>驗證會員卡</h1>
+{% extends "base.html" %}
 
-        <!-- TODO: T044 - Implement card verification interface with QR scanner -->
-        <section aria-label="掃描器">
-            <div id="qr-reader"></div>
+{% block title %}驗證會員卡 - VPass{% endblock %}
 
-            <section id="manual-input" hidden aria-label="手動輸入">
-                <p>無法使用相機？</p>
-                <label for="manual-code">手動輸入卡片代碼</label>
-                <input type="text" id="manual-code" placeholder="手動輸入卡片代碼">
-                <button type="button" onclick="verifyManualCode()">驗證</button>
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <section class="app-section">
+            <h1 class="h3 mb-3">驗證會員卡</h1>
+            <p class="text-secondary mb-4">使用下方掃描器或手動輸入卡片代碼以驗證會員身份。</p>
+
+            <div class="border rounded-4 p-4 mb-4">
+                <div id="qr-reader"></div>
+            </div>
+
+            <div id="manual-input" class="app-section bg-body-secondary" hidden aria-label="手動輸入">
+                <p class="mb-3">無法使用相機？改用手動輸入：</p>
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-8">
+                        <label class="form-label" for="manual-code">手動輸入卡片代碼</label>
+                        <input type="text" class="form-control" id="manual-code" placeholder="輸入卡片代碼">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-outline-primary w-100" onclick="verifyManualCode()">驗證</button>
+                    </div>
+                </div>
+            </div>
+
+            <section id="verification-result" class="mt-4" hidden>
+                <div class="app-section">
+                    <h2 id="result-status" class="h5 mb-3">驗證結果</h2>
+                    <div id="result-details" class="text-secondary">
+                        <!-- Verification details will be shown here -->
+                    </div>
+                </div>
             </section>
         </section>
+    </div>
 
-        <section id="verification-result" hidden>
-            <h2 id="result-status">驗證結果</h2>
-            <div id="result-details">
-                <!-- Verification details will be shown here -->
+    <div class="col-lg-5">
+        <section class="app-section">
+            <h3 class="h5 mb-3">主辦方登入</h3>
+            <p class="text-secondary">登入後可查看驗證歷史記錄與管理活動。</p>
+            <div class="list-group mb-3">
+                <a class="list-group-item list-group-item-action" href="/auth/youtube/login?role=organizer">使用 YouTube 登入</a>
+                <a class="list-group-item list-group-item-action" href="/auth/twitch/login?role=organizer">使用 Twitch 登入</a>
+            </div>
+            <div class="alert alert-info mb-0">
+                <strong>提醒：</strong> 此頁面仍在開發中，功能將陸續補齊。
             </div>
         </section>
+    </div>
+</div>
+{% endblock %}
 
-        <section aria-label="主辦方登入">
-            <h3>主辦方登入</h3>
-            <p>登入後可查看驗證歷史記錄</p>
-            <ul>
-                <li><a href="/auth/youtube/login?role=organizer">使用 YouTube 登入</a></li>
-                <li><a href="/auth/twitch/login?role=organizer">使用 Twitch 登入</a></li>
-            </ul>
-        </section>
-    </main>
-
+{% block extra_scripts %}
     <script src="/static/js/qr-scanner.js"></script>
     <script>
-        // TODO: T044 - Implement verification logic
         function verifyManualCode() {
             const code = document.getElementById('manual-code').value;
             console.log('Manual verification - TODO:', code);
         }
     </script>
-</body>
-</html>
+{% endblock %}
