@@ -8,9 +8,10 @@ use axum::{
 };
 use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
+use tower_sessions::Session;
 use uuid::Uuid;
 
-use crate::api::middleware::session::AppState;
+use crate::api::middleware::session::{AppState, SESSION_KEY_MEMBER_ID};
 use crate::models::{
     event::Event,
     verification_event::{CreateVerificationEventData, VerificationEvent},
@@ -24,6 +25,7 @@ pub enum VerificationApiError {
     EventNotFound,
     ValidationError(String),
     ConfigError(String),
+    SessionError(String),
 }
 
 impl IntoResponse for VerificationApiError {
@@ -45,6 +47,10 @@ impl IntoResponse for VerificationApiError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Configuration error: {}", msg),
             ),
+            VerificationApiError::SessionError(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Session error: {}", msg),
+            ),
         };
 
         (status, message).into_response()
@@ -56,6 +62,7 @@ impl IntoResponse for VerificationApiError {
 #[template(path = "verification/home.html")]
 struct VerificationHomeTemplate {
     events: Vec<Event>,
+    is_authenticated: bool,
 }
 
 #[derive(Template)]
@@ -63,6 +70,7 @@ struct VerificationHomeTemplate {
 struct ScannerTemplate {
     event: Event,
     issuer: crate::models::issuer::CardIssuer,
+    is_authenticated: bool,
 }
 
 #[derive(Template)]
@@ -71,9 +79,12 @@ struct HistoryTemplate {
     event: Event,
     issuer: crate::models::issuer::CardIssuer,
     events: Vec<VerificationEventWithCard>,
+    success_count: usize,
+    failed_count: usize,
     page: i64,
     per_page: i64,
     total: i64,
+    is_authenticated: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -108,23 +119,39 @@ pub struct PaginationParams {
     pub per_page: Option<i64>,
 }
 
+async fn is_authenticated(session: &Session) -> Result<bool, VerificationApiError> {
+    let member_id: Option<Uuid> = session
+        .get(SESSION_KEY_MEMBER_ID)
+        .await
+        .map_err(|e| VerificationApiError::SessionError(e.to_string()))?;
+
+    Ok(member_id.is_some())
+}
+
 // Handlers
 
 /// Verification home page - shows list of active events
 async fn verification_home(
     State(state): State<AppState>,
+    session: Session,
 ) -> Result<VerificationHomeTemplate, VerificationApiError> {
     let events = Event::list_active(&state.pool)
         .await
         .map_err(VerificationApiError::DatabaseError)?;
 
-    Ok(VerificationHomeTemplate { events })
+    let is_authenticated = is_authenticated(&session).await?;
+
+    Ok(VerificationHomeTemplate {
+        events,
+        is_authenticated,
+    })
 }
 
 /// Scanner page for a specific event
 async fn scanner_page(
     State(state): State<AppState>,
     Path(event_id): Path<Uuid>,
+    session: Session,
 ) -> Result<ScannerTemplate, VerificationApiError> {
     let event = Event::find_by_id(&state.pool, event_id)
         .await
@@ -136,7 +163,13 @@ async fn scanner_page(
         .map_err(VerificationApiError::DatabaseError)?
         .ok_or(VerificationApiError::EventNotFound)?;
 
-    Ok(ScannerTemplate { event, issuer })
+    let is_authenticated = is_authenticated(&session).await?;
+
+    Ok(ScannerTemplate {
+        event,
+        issuer,
+        is_authenticated,
+    })
 }
 
 /// Request verification QR code
@@ -314,6 +347,7 @@ async fn verification_history(
     State(state): State<AppState>,
     Path(event_id): Path<Uuid>,
     Query(params): Query<PaginationParams>,
+    session: Session,
 ) -> Result<HistoryTemplate, VerificationApiError> {
     let event = Event::find_by_id(&state.pool, event_id)
         .await
@@ -366,13 +400,27 @@ async fn verification_history(
         });
     }
 
+    let success_count = events_with_cards
+        .iter()
+        .filter(|ve| ve.event.verification_result == "success")
+        .count();
+    let failed_count = events_with_cards
+        .iter()
+        .filter(|ve| ve.event.verification_result == "failed")
+        .count();
+
+    let is_authenticated = is_authenticated(&session).await?;
+
     Ok(HistoryTemplate {
         event,
         issuer,
         events: events_with_cards,
+        success_count,
+        failed_count,
         page,
         per_page,
         total,
+        is_authenticated,
     })
 }
 

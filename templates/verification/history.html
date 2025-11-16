@@ -3,73 +3,169 @@
 {% block title %}驗證歷史記錄 - {{ event.event_name }}{% endblock %}
 
 {% block content %}
-<section class="app-section mb-4">
-    <h1 class="h3 mb-1">驗證歷史記錄</h1>
-    <p class="text-secondary mb-0">{{ event.event_name }} - {{ issuer.channel_name }}</p>
-</section>
-
-<div class="app-table-wrapper mb-3">
-    <div class="table-responsive">
-        <table class="table table-striped align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>時間</th>
-                    <th>結果</th>
-                    <th>會員</th>
-                    <th>卡片 ID</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ve in events %}
-                <tr>
-                    <td>{{ ve.event.verified_at }}</td>
-                    <td>
-                        <span class="badge {% if ve.event.verification_result == "success" %}text-bg-success{% else %}text-bg-danger{% endif %}">
-                            {{ ve.event.verification_result }}
-                        </span>
-                    </td>
-                    <td>
-                        {% match ve.member %}
-                            {% when Some with (m) %}
-                                {{ m.default_display_name }}
-                            {% when None %}
-                                N/A
-                        {% endmatch %}
-                    </td>
-                    <td>
-                        {% match ve.card %}
-                            {% when Some with (c) %}
-                                {{ c.id }}
-                            {% when None %}
-                                N/A
-                        {% endmatch %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="page-header animate-fade-in">
+    <nav class="breadcrumb-nav">
+        <a href="/events/{{ event.id }}" class="breadcrumb-link">← 返回活動</a>
+    </nav>
+    <div class="page-header-content">
+        <div class="page-header-text">
+            <h1 class="page-title">驗證歷史記錄</h1>
+            <p class="page-subtitle">{{ event.event_name }} - {{ issuer.channel_name }}</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="/verify/{{ event.id }}/scanner" class="btn btn-primary">
+                <i class="bi bi-qr-code-scan"></i>
+                返回掃描器
+            </a>
+        </div>
     </div>
 </div>
 
-<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-    <p class="mb-0">第 {{ page }} 頁，共 {{ (total + per_page - 1) / per_page }} 頁</p>
-    <nav aria-label="頁碼">
-        <ul class="pagination mb-0">
-            {% if page > 1 %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page - 1 }}">上一頁</a>
-                </li>
-            {% else %}
-                <li class="page-item disabled"><span class="page-link">上一頁</span></li>
-            {% endif %}
-            {% if page * per_page < total %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page + 1 }}">下一頁</a>
-                </li>
-            {% else %}
-                <li class="page-item disabled"><span class="page-link">下一頁</span></li>
-            {% endif %}
-        </ul>
-    </nav>
+<div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem;">
+    <!-- Statistics Summary -->
+    <div class="info-panel animate-fade-in stagger-1" style="margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem;">
+            <div style="text-align: center;">
+                <div style="font-family: var(--font-display); font-size: 2.5rem; font-weight: 800; color: var(--color-ink); line-height: 1;">
+                    {{ total }}
+                </div>
+                <div style="font-size: 0.875rem; font-weight: 600; color: var(--color-slate); margin-top: 0.5rem;">
+                    總驗證次數
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-family: var(--font-display); font-size: 2.5rem; font-weight: 800; color: #10b981; line-height: 1;">
+                    {{ success_count }}
+                </div>
+                <div style="font-size: 0.875rem; font-weight: 600; color: var(--color-slate); margin-top: 0.5rem;">
+                    成功驗證
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-family: var(--font-display); font-size: 2.5rem; font-weight: 800; color: #ef4444; line-height: 1;">
+                    {{ failed_count }}
+                </div>
+                <div style="font-size: 0.875rem; font-weight: 600; color: var(--color-slate); margin-top: 0.5rem;">
+                    驗證失敗
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if events.is_empty() %}
+        <div class="empty-state animate-fade-in stagger-2">
+            <div class="empty-icon">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <h3 class="empty-title">尚無驗證記錄</h3>
+            <p class="empty-description">此活動還沒有任何驗證記錄</p>
+            <a href="/verify/{{ event.id }}/scanner" class="btn btn-primary">
+                <i class="bi bi-qr-code-scan"></i>
+                開始掃描
+            </a>
+        </div>
+    {% else %}
+        <!-- Timeline List -->
+        <div class="timeline-list animate-fade-in stagger-2">
+            {% for ve in events %}
+                <div class="timeline-item status-{{ ve.event.verification_result }}">
+                    <div style="background: white; border: 2px solid var(--color-mist); border-radius: 12px; padding: 1.5rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+                        <div style="display: flex; align-items: start; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;">
+                            <!-- Left: Member Info -->
+                            <div style="flex: 1; min-width: 200px;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                    {% if ve.event.verification_result == "success" %}
+                                        <i class="bi bi-check-circle-fill" style="font-size: 1.5rem; color: #10b981;"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle-fill" style="font-size: 1.5rem; color: #ef4444;"></i>
+                                    {% endif %}
+
+                                    <div>
+                                        <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-ink); margin: 0;">
+                                            {% match ve.member %}
+                                                {% when Some with (m) %}
+                                                    {{ m.default_display_name }}
+                                                {% when None %}
+                                                    未知會員
+                                            {% endmatch %}
+                                        </h4>
+                                        <p style="font-size: 0.8125rem; color: var(--color-slate); margin: 0;">
+                                            {% match ve.card %}
+                                                {% when Some with (c) %}
+                                                    卡片 ID: <span style="font-family: 'Courier New', monospace;">{{ c.id }}</span>
+                                                {% when None %}
+                                                    無卡片資訊
+                                            {% endmatch %}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                    {% if ve.event.verification_result == "success" %}
+                                        <span class="card-badge badge-success">
+                                            <i class="bi bi-shield-check"></i>
+                                            驗證成功
+                                        </span>
+                                    {% else %}
+                                        <span class="card-badge badge-error">
+                                            <i class="bi bi-shield-x"></i>
+                                            驗證失敗
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Right: Timestamp -->
+                            <div style="text-align: right;">
+                                <div style="font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-cyan); margin-bottom: 0.25rem;">
+                                    驗證時間
+                                </div>
+                                <div style="font-size: 1rem; font-weight: 600; color: var(--color-ink);">
+                                    {{ ve.event.verified_at.format("%Y-%m-%d") }}
+                                </div>
+                                <div style="font-size: 0.875rem; color: var(--color-slate);">
+                                    {{ ve.event.verified_at.format("%H:%M:%S") }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        <div class="animate-fade-in stagger-3" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; padding: 1.5rem; background: white; border-radius: 12px; border: 2px solid var(--color-mist);">
+            <p style="margin: 0; font-size: 0.9375rem; color: var(--color-slate);">
+                第 <span style="font-weight: 700; color: var(--color-ink);">{{ page }}</span> 頁，
+                共 <span style="font-weight: 700; color: var(--color-ink);">{{ (total + per_page - 1) / per_page }}</span> 頁
+            </p>
+
+            <div style="display: flex; gap: 0.5rem;">
+                {% if page > 1 %}
+                    <a href="?page={{ page - 1 }}" class="btn btn-ghost" style="padding: 0.625rem 1.25rem;">
+                        <i class="bi bi-chevron-left"></i>
+                        上一頁
+                    </a>
+                {% else %}
+                    <button disabled class="btn btn-ghost" style="padding: 0.625rem 1.25rem; opacity: 0.5; cursor: not-allowed;">
+                        <i class="bi bi-chevron-left"></i>
+                        上一頁
+                    </button>
+                {% endif %}
+
+                {% if page * per_page < total %}
+                    <a href="?page={{ page + 1 }}" class="btn btn-ghost" style="padding: 0.625rem 1.25rem;">
+                        下一頁
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                {% else %}
+                    <button disabled class="btn btn-ghost" style="padding: 0.625rem 1.25rem; opacity: 0.5; cursor: not-allowed;">
+                        下一頁
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

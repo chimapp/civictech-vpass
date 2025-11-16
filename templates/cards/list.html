@@ -3,43 +3,100 @@
 {% block title %}我的卡片 - VPass{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁" class="mb-3">
-    <a class="btn btn-link px-0" href="/">&larr; 返回</a>
-</nav>
-
-<section class="app-section">
-    <header class="mb-4">
-        <h1 class="h3 mb-1">我的卡片</h1>
-        <p class="text-secondary mb-0">會員收藏</p>
-    </header>
-
-    {% if let Some(msg) = success_message %}
-        <div class="alert alert-success" role="status">
-            {{ msg }}
+<div class="page-header animate-fade-in">
+    <nav class="breadcrumb-nav">
+        <a href="/" class="breadcrumb-link">← 返回</a>
+    </nav>
+    <div class="page-header-content">
+        <div class="page-header-text">
+            <h1 class="page-title">我的數位會員卡</h1>
+            <p class="page-subtitle">管理您的頻道會員驗證卡</p>
         </div>
-    {% endif %}
+    </div>
+</div>
 
-    {% if cards.is_empty() %}
-        <div class="alert alert-info">
-            您還沒有任何卡片。 <a href="/issuers" class="alert-link">瀏覽頻道</a>
+{% if let Some(msg) = success_message %}
+    <div class="verification-result result-success animate-fade-in stagger-1" style="margin-bottom: 2rem;">
+        <div class="result-icon">
+            <i class="bi bi-check-circle-fill"></i>
         </div>
-    {% else %}
-        <div class="list-group">
-            {% for card in cards %}
-                <a class="list-group-item list-group-item-action" href="/cards/{{ card.id }}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="h5 mb-1">{{ card.membership_level_label }}</h2>
-                            <small class="text-secondary">卡片 ID：{{ card.id }}</small>
-                        </div>
-                        <div class="text-end">
-                            <span class="badge text-bg-primary mb-1">已確認 {{ card.membership_confirmed_at.format("%Y-%m-%d") }}</span>
-                            <div class="text-secondary small">已發行 {{ card.issued_at.format("%Y-%m-%d") }}</div>
+        <p class="result-message">{{ msg }}</p>
+    </div>
+{% endif %}
+
+{% if cards.is_empty() %}
+    <div class="empty-state animate-fade-in stagger-2">
+        <div class="empty-icon">
+            <i class="bi bi-wallet"></i>
+        </div>
+        <h3 class="empty-title">尚無會員卡</h3>
+        <p class="empty-description">
+            您還沒有領取任何頻道會員卡<br>
+            立即探索並加入喜愛的創作者社群
+        </p>
+        <a href="/issuers" class="btn btn-primary">
+            <i class="bi bi-youtube"></i>
+            <span>瀏覽頻道</span>
+        </a>
+    </div>
+{% else %}
+    <div class="card-grid">
+        {% for card in cards %}
+            <a href="/cards/{{ card.id }}" class="content-card animate-fade-in stagger-{{ loop.index }}">
+                <div class="card-corner"></div>
+                <div class="card-number">{{ loop.index }}</div>
+
+                <div class="card-content">
+                    <h3 class="card-title">{{ card.membership_level_label }}</h3>
+                    <p class="card-description" style="margin-bottom: 1rem; color: var(--color-slate); font-size: 0.875rem;">
+                        卡片 ID：{{ card.id }}
+                    </p>
+
+                    <div class="card-meta">
+                        <div class="card-badge badge-success">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>有效</span>
                         </div>
                     </div>
-                </a>
-            {% endfor %}
-        </div>
-    {% endif %}
-</section>
+
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-mist);">
+                        <div style="display: grid; gap: 0.75rem; font-size: 0.875rem;">
+                            <div>
+                                <div style="color: var(--color-cyan); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">會員確認</div>
+                                <div style="color: var(--color-ink); font-weight: 500;">{{ card.membership_confirmed_at.format("%Y年%m月%d日") }}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--color-cyan); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">發行日期</div>
+                                <div style="color: var(--color-ink); font-weight: 500;">{{ card.issued_at.format("%Y年%m月%d日") }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: flex-end; color: var(--color-mist); font-size: 1.5rem; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);" class="card-arrow-icon">
+                    <i class="bi bi-arrow-right"></i>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.content-card .card-arrow-icon {
+    color: var(--color-mist);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.content-card:hover .card-arrow-icon {
+    color: var(--color-cyan);
+    transform: translateX(4px);
+}
+
+/* Limit stagger animations to 6 items */
+.stagger-7, .stagger-8, .stagger-9, .stagger-10 {
+    animation-delay: 0.6s;
+}
+</style>
 {% endblock %}

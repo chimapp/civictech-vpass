@@ -1,58 +1,129 @@
 {% extends "base.html" %}
 
-{% block title %}卡片發行者 - VPass{% endblock %}
+{% block title %}創作者頻道 - VPass{% endblock %}
 
 {% block content %}
-<section class="app-section mb-4">
-    <header class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-        <div>
-            <h1 class="h3 mb-1">卡片發行者</h1>
-            <p class="text-secondary mb-0">管理頻道及驗證設定</p>
+<div class="page-header animate-fade-in">
+    <div class="page-header-content">
+        <div class="page-header-text">
+            <h1 class="page-title">創作者頻道</h1>
+            <p class="page-subtitle">管理頻道及會員驗證設定</p>
         </div>
-        <a class="btn btn-primary" href="/issuers/new">建立發行者</a>
-    </header>
-</section>
+        <div class="page-header-actions">
+            <a href="/issuers/new" class="btn btn-primary">
+                <i class="bi bi-plus-circle-fill"></i>
+                <span>建立發行者</span>
+            </a>
+        </div>
+    </div>
+</div>
 
 {% if issuers.is_empty() %}
-    <div class="alert alert-info">尚無發行者。 <a class="alert-link" href="/issuers/new">建立第一個發行者</a></div>
+    <div class="empty-state animate-fade-in stagger-1">
+        <div class="empty-icon">
+            <i class="bi bi-youtube"></i>
+        </div>
+        <h3 class="empty-title">尚無發行者</h3>
+        <p class="empty-description">
+            建立第一個發行者<br>
+            開始發行會員驗證卡給您的頻道訂閱者
+        </p>
+        <a href="/issuers/new" class="btn btn-primary">
+            <i class="bi bi-plus-circle-fill"></i>
+            <span>建立第一個發行者</span>
+        </a>
+    </div>
 {% else %}
-    <div class="row row-cols-1 row-cols-lg-2 g-3">
+    <div class="card-grid">
         {% for issuer in issuers %}
-            <div class="col">
-                <article class="card h-100">
-                    <div class="card-body d-flex flex-column gap-3">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h2 class="h5 mb-1">{{ issuer.channel_name }}</h2>
-                                <p class="text-secondary mb-0">{{ issuer.channel_handle.as_deref().unwrap_or("未設定") }}</p>
+            <div class="content-card issuer-card animate-fade-in stagger-{{ loop.index }}">
+                <div class="card-corner"></div>
+                <div class="card-number">{{ loop.index }}</div>
+
+                <div class="card-content">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem;">
+                        <div style="flex: 1;">
+                            <h3 class="card-title" style="margin-bottom: 0.5rem;">{{ issuer.channel_name }}</h3>
+                            <p style="color: var(--color-slate); font-size: 0.875rem; margin: 0;">
+                                {{ issuer.channel_handle.as_deref().unwrap_or("@未設定") }}
+                            </p>
+                        </div>
+                        {% if issuer.is_active %}
+                            <div class="status-badge status-active">
+                                <span class="status-pulse"></span>
+                                <span>啟用中</span>
                             </div>
-                            <span class="badge {% if issuer.is_active %}text-bg-success{% else %}text-bg-secondary{% endif %}">
-                                {% if issuer.is_active %}啟用中{% else %}停用中{% endif %}
-                            </span>
-                        </div>
-                        <dl class="row mb-0 small">
-                            <dt class="col-sm-4">頻道 ID</dt>
-                            <dd class="col-sm-8">{{ issuer.youtube_channel_id }}</dd>
-                            <dt class="col-sm-4">驗證影片</dt>
-                            <dd class="col-sm-8">{{ issuer.verification_video_id }}</dd>
-                            <dt class="col-sm-4">預設標籤</dt>
-                            <dd class="col-sm-8">{{ issuer.default_membership_label }}</dd>
-                            <dt class="col-sm-4">皮夾 VC UID</dt>
-                            <dd class="col-sm-8">{{ issuer.vc_uid.as_deref().unwrap_or("未設定") }}</dd>
-                        </dl>
-                        <div class="d-flex flex-wrap gap-2">
-                            <a class="btn btn-outline-primary btn-sm" href="/channels/{{ issuer.id }}/claim">領取卡片</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="/issuers/{{ issuer.id }}/edit">編輯</a>
-                            <form class="d-inline" action="/issuers/{{ issuer.id }}/toggle" method="POST">
-                                <button type="submit" class="btn btn-outline-warning btn-sm">
-                                    {% if issuer.is_active %}停用{% else %}啟用{% endif %}
-                                </button>
-                            </form>
-                        </div>
+                        {% else %}
+                            <div class="status-badge status-inactive">
+                                <span>停用中</span>
+                            </div>
+                        {% endif %}
                     </div>
-                </article>
+
+                    <div style="background: var(--color-ghost); border-radius: 8px; padding: 1rem; margin: 1.5rem 0;">
+                        <dl style="display: grid; gap: 0.75rem; margin: 0;">
+                            <div>
+                                <dt style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-slate); margin-bottom: 0.25rem;">頻道 ID</dt>
+                                <dd style="font-size: 0.8125rem; color: var(--color-ink); font-weight: 500; margin: 0; font-family: monospace;">{{ issuer.youtube_channel_id }}</dd>
+                            </div>
+                            <div>
+                                <dt style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-slate); margin-bottom: 0.25rem;">驗證影片</dt>
+                                <dd style="font-size: 0.8125rem; color: var(--color-ink); font-weight: 500; margin: 0; font-family: monospace;">{{ issuer.verification_video_id }}</dd>
+                            </div>
+                            <div>
+                                <dt style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-slate); margin-bottom: 0.25rem;">預設標籤</dt>
+                                <dd style="font-size: 0.8125rem; color: var(--color-ink); font-weight: 500; margin: 0;">{{ issuer.default_membership_label }}</dd>
+                            </div>
+                            {% if issuer.vc_uid.is_some() %}
+                                <div>
+                                    <dt style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-slate); margin-bottom: 0.25rem;">皮夾 VC UID</dt>
+                                    <dd style="font-size: 0.8125rem; color: var(--color-ink); font-weight: 500; margin: 0; font-family: monospace;">{{ issuer.vc_uid.as_deref().unwrap() }}</dd>
+                                </div>
+                            {% endif %}
+                        </dl>
+                    </div>
+
+                    <div style="display: flex; flex-wrap: gap: 0.75rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-mist);">
+                        <a href="/channels/{{ issuer.id }}/claim" class="btn btn-primary btn-sm" style="flex: 1;">
+                            <i class="bi bi-credit-card-2-front"></i>
+                            <span>領取卡片</span>
+                        </a>
+                        <a href="/issuers/{{ issuer.id }}/edit" class="btn btn-ghost btn-sm">
+                            <i class="bi bi-pencil-fill"></i>
+                            <span>編輯</span>
+                        </a>
+                        <form action="/issuers/{{ issuer.id }}/toggle" method="POST" style="display: inline;">
+                            <button type="submit" class="btn btn-accent btn-sm">
+                                {% if issuer.is_active %}
+                                    <i class="bi bi-pause-circle-fill"></i>
+                                    <span>停用</span>
+                                {% else %}
+                                    <i class="bi bi-play-circle-fill"></i>
+                                    <span>啟用</span>
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         {% endfor %}
     </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.issuer-card:hover {
+    border-color: var(--color-coral);
+}
+
+.issuer-card:hover .card-corner {
+    border-right-color: var(--color-coral);
+}
+
+/* Limit stagger animations */
+.stagger-7, .stagger-8, .stagger-9, .stagger-10 {
+    animation-delay: 0.6s;
+}
+</style>
 {% endblock %}

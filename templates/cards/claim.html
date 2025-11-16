@@ -1,59 +1,227 @@
 {% extends "base.html" %}
 
-{% block title %}領取卡片 - VPass{% endblock %}
+{% block title %}領取卡片{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁" class="mb-3">
-    <a class="btn btn-link px-0" href="/issuers">&larr; 返回</a>
-</nav>
-
-<div class="row g-4">
-    <div class="col-lg-6">
-        <section class="app-section">
-            <header class="mb-3">
-                <p class="text-uppercase text-primary fw-semibold mb-1">會員驗證</p>
-                <h1 class="h3 mb-1">領取卡片</h1>
-                <p class="text-secondary mb-0">{{ issuer.channel_name }}</p>
-            </header>
-            <p class="text-secondary small">
-                {{ issuer.channel_handle.as_deref().unwrap_or(issuer.youtube_channel_id.as_str()) }}
-            </p>
-        </section>
-    </div>
-
-    <div class="col-lg-6">
-{% match is_authenticated %}
-    {% when false %}
-        <section aria-label="登入提示" class="app-section">
-            <h2 class="h5">操作步驟</h2>
-            <p>要領取 <strong>{{ issuer.channel_name }}</strong> 的會員卡片，請完成以下步驟：</p>
-            <ol class="ps-3">
-                <li>使用您的 YouTube 帳號登入。</li>
-                <li>在驗證影片下留言。</li>
-                <li>回到這裡並貼上留言網址。</li>
-            </ol>
-            <a class="btn btn-primary mt-3" href="/auth/youtube/login?return_url=/channels/{{ issuer_id }}/claim">使用 YouTube 登入</a>
-        </section>
-    {% when true %}
-        <section aria-label="操作說明" class="app-section">
-            <h2 class="h5">操作說明</h2>
-            <ol class="ps-3">
-                <li>前往該頻道的會員專屬驗證影片。</li>
-                <li>留下評論（任何文字都可以）。</li>
-                <li>複製留言網址。</li>
-                <li>貼上並送出。</li>
-            </ol>
-        </section>
-
-        <form action="/channels/{{ issuer.id }}/claim" method="POST" class="app-section mt-4">
-            <div class="mb-3">
-                <label class="form-label" for="comment_link">留言網址或 ID</label>
-                <input type="text" class="form-control" name="comment_link" id="comment_link" required placeholder="https://www.youtube.com/watch?v=...&lc=...">
-                <div class="form-text">貼上含有您留言 ID 的完整網址。</div>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">發行卡片</button>
-        </form>
-{% endmatch %}
+<div class="page-header animate-fade-in">
+    <nav class="breadcrumb-nav">
+        <a href="/issuers" class="breadcrumb-link">← 返回頻道列表</a>
+    </nav>
+    <div class="page-header-content">
+        <div class="page-header-text">
+            <h1 class="page-title">領取會員卡片</h1>
+            <p class="page-subtitle">{{ issuer.channel_name }}</p>
+        </div>
     </div>
 </div>
+
+<div class="container" style="max-width: 1000px; margin: 0 auto; padding: 0 1rem 3rem;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <!-- Left Column: Info & Instructions -->
+        <div>
+            <!-- Channel Info Card -->
+            <div class="content-card animate-fade-in stagger-1">
+                <div class="card-corner"></div>
+                <div class="card-content">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="width: 64px; height: 64px; background: linear-gradient(135deg, var(--color-cyan), var(--color-ink)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white;">
+                            <i class="bi bi-youtube"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--color-ink); margin: 0; letter-spacing: -0.02em;">
+                                {{ issuer.channel_name }}
+                            </h3>
+                            <p style="font-size: 0.9375rem; color: var(--color-slate); margin: 0;">
+                                {{ issuer.channel_handle.as_deref().unwrap_or(issuer.youtube_channel_id.as_str()) }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card-badge">
+                        <i class="bi bi-shield-check"></i>
+                        官方認證頻道
+                    </div>
+                </div>
+            </div>
+
+{% match is_authenticated %}
+    {% when false %}
+            <!-- Not Authenticated: Show Login -->
+            <div class="form-section animate-fade-in stagger-2" style="margin-top: 2rem; background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(26, 31, 58, 0.05)); border-color: rgba(0, 217, 255, 0.3);">
+                <div class="form-section-header">
+                    <span class="section-number">01</span>
+                    <h3 class="section-title">登入 YouTube</h3>
+                </div>
+
+                <p style="font-size: 0.9375rem; color: var(--color-slate); line-height: 1.6; margin-bottom: 1.5rem;">
+                    首先，請使用您的 YouTube 帳號登入，以便我們驗證您的會員身份。
+                </p>
+
+                <a class="btn btn-primary" href="/auth/youtube/login?return_url=/channels/{{ issuer_id }}/claim" style="width: 100%; padding: 1rem;">
+                    <i class="bi bi-youtube"></i>
+                    使用 YouTube 登入
+                </a>
+            </div>
+    {% when true %}
+            <!-- Authenticated: Show Instructions -->
+            <div class="form-section animate-fade-in stagger-2" style="margin-top: 2rem;">
+                <div class="form-section-header">
+                    <span class="section-number">✓</span>
+                    <h3 class="section-title">已登入 YouTube</h3>
+                </div>
+
+                <div class="card-badge badge-success">
+                    <i class="bi bi-check-circle-fill"></i>
+                    驗證成功
+                </div>
+            </div>
+    {% endmatch %}
+        </div>
+
+        <!-- Right Column: Steps or Form -->
+        <div>
+{% match is_authenticated %}
+    {% when false %}
+            <!-- Steps when not authenticated -->
+            <div class="info-panel animate-fade-in stagger-3">
+                <h3 class="panel-heading">
+                    <i class="bi bi-list-ol" style="color: var(--color-cyan); margin-right: 0.5rem;"></i>
+                    操作步驟
+                </h3>
+
+                <p style="font-size: 0.9375rem; color: var(--color-slate); margin-bottom: 1.5rem;">
+                    要領取 <strong>{{ issuer.channel_name }}</strong> 的會員卡片，請完成以下步驟：
+                </p>
+
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div style="display: flex; gap: 1rem;">
+                        <div style="flex-shrink: 0; width: 36px; height: 36px; background: linear-gradient(135deg, var(--color-cyan), var(--color-ink)); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-family: var(--font-display); font-weight: 700;">
+                            1
+                        </div>
+                        <div>
+                            <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-ink); margin: 0 0 0.25rem 0;">
+                                使用 YouTube 登入
+                            </h4>
+                            <p style="font-size: 0.875rem; color: var(--color-slate); margin: 0;">
+                                點擊左側按鈕，使用您的 YouTube 帳號登入
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <div style="flex-shrink: 0; width: 36px; height: 36px; background: var(--color-mist); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--color-slate); font-family: var(--font-display); font-weight: 700;">
+                            2
+                        </div>
+                        <div>
+                            <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-ink); margin: 0 0 0.25rem 0;">
+                                在驗證影片下留言
+                            </h4>
+                            <p style="font-size: 0.875rem; color: var(--color-slate); margin: 0;">
+                                前往頻道的會員專屬驗證影片並留下評論
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <div style="flex-shrink: 0; width: 36px; height: 36px; background: var(--color-mist); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--color-slate); font-family: var(--font-display); font-weight: 700;">
+                            3
+                        </div>
+                        <div>
+                            <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-ink); margin: 0 0 0.25rem 0;">
+                                提交留言網址
+                            </h4>
+                            <p style="font-size: 0.875rem; color: var(--color-slate); margin: 0;">
+                                複製留言網址並在此頁面提交以發行卡片
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    {% when true %}
+            <!-- Form when authenticated -->
+            <form action="/channels/{{ issuer.id }}/claim" method="POST">
+                <div class="form-section animate-fade-in stagger-3">
+                    <div class="form-section-header">
+                        <span class="section-number">01</span>
+                        <h3 class="section-title">前往驗證影片</h3>
+                    </div>
+
+                    <p style="font-size: 0.9375rem; color: var(--color-slate); line-height: 1.6; margin-bottom: 1rem;">
+                        前往該頻道的會員專屬驗證影片並留下評論（任何文字都可以）。
+                    </p>
+
+                    <a href="https://www.youtube.com/watch?v={{ issuer.verification_video_id }}" target="_blank" class="btn btn-secondary" style="width: 100%;">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        前往驗證影片
+                    </a>
+                </div>
+
+                <div class="form-section animate-fade-in stagger-4">
+                    <div class="form-section-header">
+                        <span class="section-number">02</span>
+                        <h3 class="section-title">提交留言網址</h3>
+                    </div>
+
+                    <div class="form-field">
+                        <label class="field-label required" for="comment_link">留言網址或 ID</label>
+                        <input
+                            type="text"
+                            class="field-input"
+                            name="comment_link"
+                            id="comment_link"
+                            required
+                            placeholder="https://www.youtube.com/watch?v=...&lc=..."
+                        >
+                        <span class="field-hint">
+                            <i class="bi bi-link-45deg"></i>
+                            貼上含有您留言 ID 的完整網址
+                        </span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; margin-top: 1rem;">
+                        <i class="bi bi-check-circle"></i>
+                        發行卡片
+                    </button>
+                </div>
+            </form>
+
+            <div class="form-section animate-fade-in stagger-5" style="background: rgba(251, 191, 36, 0.05); border-color: rgba(251, 191, 36, 0.3);">
+                <div style="display: flex; align-items: start; gap: 1rem;">
+                    <i class="bi bi-info-circle-fill" style="font-size: 1.5rem; color: var(--color-amber); flex-shrink: 0;"></i>
+                    <div>
+                        <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-ink); margin-bottom: 0.5rem;">
+                            如何找到留言網址？
+                        </h4>
+                        <p style="font-size: 0.875rem; color: var(--color-slate); line-height: 1.6; margin: 0;">
+                            在您的留言上點擊右鍵，選擇「複製連結位址」，即可取得留言網址。網址應包含 <code style="background: var(--color-mist); padding: 0.125rem 0.375rem; border-radius: 4px;">lc=</code> 參數。
+                        </p>
+                    </div>
+                </div>
+            </div>
+    {% endmatch %}
+        </div>
+    </div>
+</div>
+
+<style>
+.field-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--color-slate);
+    margin-top: 0.5rem;
+}
+
+.field-hint i {
+    font-size: 0.875rem;
+    color: var(--color-cyan);
+}
+
+@media (max-width: 768px) {
+    .container > div {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
 {% endblock %}

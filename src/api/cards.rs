@@ -66,6 +66,7 @@ impl IntoResponse for CardsError {
 #[template(path = "cards/show.html")]
 struct ShowCardTemplate {
     card: MembershipCard,
+    is_authenticated: bool,
 }
 
 #[derive(Template)]
@@ -81,6 +82,7 @@ struct ClaimCardTemplate {
 struct MyCardsTemplate {
     cards: Vec<MembershipCard>,
     success_message: Option<String>,
+    is_authenticated: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -242,7 +244,10 @@ async fn show_card(
     }
 
     // Card already contains wallet QR data (no separate table lookup needed)
-    Ok(ShowCardTemplate { card })
+    Ok(ShowCardTemplate {
+        card,
+        is_authenticated: true,
+    })
 }
 
 async fn card_qr(
@@ -298,6 +303,7 @@ async fn my_cards(
     Ok(MyCardsTemplate {
         cards,
         success_message,
+        is_authenticated: true,
     })
 }
 

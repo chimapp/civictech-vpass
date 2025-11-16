@@ -1,51 +1,157 @@
 {% extends "base.html" %}
 
-{% block title %}建立活動{% endblock %}
+{% block title %}建立新活動{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁" class="mb-3">
-    <a class="btn btn-link px-0" href="/events">&larr; 返回活動</a>
-</nav>
+<div class="page-header animate-fade-in">
+    <nav class="breadcrumb-nav">
+        <a href="/events" class="breadcrumb-link">← 返回活動列表</a>
+    </nav>
+    <div class="page-header-content">
+        <div class="page-header-text">
+            <h1 class="page-title">建立新活動</h1>
+            <p class="page-subtitle">設定活動資訊以開始會員驗證</p>
+        </div>
+    </div>
+</div>
 
-<section class="app-section">
-    <header class="mb-4">
-        <h1 class="h3 mb-1">建立新活動</h1>
-        <p class="text-secondary mb-0">活動詳情</p>
-    </header>
+<div class="container" style="max-width: 800px; margin: 0 auto; padding: 0 1rem 3rem;">
+    <form method="post" action="/events/create">
+        <!-- Section 01: 基本資訊 -->
+        <div class="form-section animate-fade-in stagger-1">
+            <div class="form-section-header">
+                <span class="section-number">01</span>
+                <h3 class="section-title">基本資訊</h3>
+            </div>
 
-    <form method="post" action="/events/create" class="row g-3">
-        <div class="col-12">
-            <label class="form-label" for="issuer_id">頻道</label>
-            <select class="form-select" name="issuer_id" id="issuer_id" required>
-                {% for issuer in issuers %}
-                <option value="{{ issuer.id }}">{{ issuer.channel_name }}</option>
-                {% endfor %}
-            </select>
+            <div class="form-field">
+                <label class="field-label required" for="event_name">活動名稱</label>
+                <input
+                    class="field-input"
+                    type="text"
+                    name="event_name"
+                    id="event_name"
+                    placeholder="例如：2024 粉絲見面會"
+                    required
+                >
+                <span class="field-hint">
+                    <i class="bi bi-info-circle"></i>
+                    為您的活動取一個清楚易懂的名稱
+                </span>
+            </div>
+
+            <div class="form-field">
+                <label class="field-label required" for="issuer_id">所屬頻道</label>
+                <select class="field-select" name="issuer_id" id="issuer_id" required>
+                    <option value="">請選擇頻道...</option>
+                    {% for issuer in issuers %}
+                    <option value="{{ issuer.id }}">{{ issuer.channel_name }}</option>
+                    {% endfor %}
+                </select>
+                <span class="field-hint">
+                    <i class="bi bi-info-circle"></i>
+                    選擇此活動對應的頻道發行者
+                </span>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label" for="event_name">活動名稱</label>
-            <input class="form-control" type="text" name="event_name" id="event_name" required>
+        <!-- Section 02: 活動詳情 -->
+        <div class="form-section animate-fade-in stagger-2">
+            <div class="form-section-header">
+                <span class="section-number">02</span>
+                <h3 class="section-title">活動詳情</h3>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                <div class="form-field">
+                    <label class="field-label required" for="event_date">活動日期</label>
+                    <input
+                        class="field-input"
+                        type="date"
+                        name="event_date"
+                        id="event_date"
+                        required
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-calendar3"></i>
+                        活動舉辦日期
+                    </span>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label" for="event_location">活動地點</label>
+                    <input
+                        class="field-input"
+                        type="text"
+                        name="event_location"
+                        id="event_location"
+                        placeholder="例如：台北國際會議中心 或 線上"
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-geo-alt"></i>
+                        實體或線上活動地點（選填）
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label class="field-label" for="event_description">活動描述</label>
+                <textarea
+                    class="field-textarea"
+                    name="event_description"
+                    id="event_description"
+                    rows="5"
+                    placeholder="簡單描述這個活動的內容、目的或特別事項..."
+                ></textarea>
+                <span class="field-hint">
+                    <i class="bi bi-pencil"></i>
+                    活動的詳細說明（選填）
+                </span>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label" for="event_date">活動日期</label>
-            <input class="form-control" type="date" name="event_date" id="event_date" required>
+        <!-- Section 03: 確認 -->
+        <div class="form-section animate-fade-in stagger-3" style="background: rgba(0, 217, 255, 0.03); border-color: rgba(0, 217, 255, 0.2);">
+            <div style="display: flex; align-items: start; gap: 1rem;">
+                <i class="bi bi-lightbulb-fill" style="font-size: 1.5rem; color: var(--color-cyan); flex-shrink: 0;"></i>
+                <div>
+                    <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-ink); margin-bottom: 0.5rem;">
+                        準備好了嗎？
+                    </h4>
+                    <p style="font-size: 0.9375rem; color: var(--color-slate); line-height: 1.6; margin: 0;">
+                        建立活動後，您就可以開始使用 QR 掃描器驗證會員身份。您可以隨時回來編輯活動資訊或查看統計數據。
+                    </p>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label" for="event_location">地點</label>
-            <input class="form-control" type="text" name="event_location" id="event_location" placeholder="線上 / 實體地點">
-        </div>
-
-        <div class="col-12">
-            <label class="form-label" for="event_description">描述</label>
-            <textarea class="form-control" name="event_description" id="event_description" rows="4" placeholder="選填：活動簡介"></textarea>
-        </div>
-
-        <div class="col-12">
-            <button type="submit" class="btn btn-primary w-100">建立活動</button>
+        <!-- Submit Actions -->
+        <div class="animate-fade-in stagger-4" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+            <a href="/events" class="btn btn-ghost">
+                <i class="bi bi-x-circle"></i>
+                取消
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i>
+                建立活動
+            </button>
         </div>
     </form>
-</section>
+</div>
+
+<style>
+.field-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--color-slate);
+    margin-top: 0.5rem;
+}
+
+.field-hint i {
+    font-size: 0.875rem;
+    color: var(--color-cyan);
+}
+</style>
 {% endblock %}

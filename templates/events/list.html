@@ -1,45 +1,103 @@
 {% extends "base.html" %}
 
-{% block title %}活動{% endblock %}
+{% block title %}活動管理{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁" class="mb-3">
-    <a class="btn btn-link px-0" href="/">&larr; 返回</a>
-</nav>
-
-<section class="app-section mb-4">
-    <header class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-        <div>
-            <h1 class="h3 mb-1">活動</h1>
-            <p class="text-secondary mb-0">管理活動</p>
+<div class="page-header animate-fade-in">
+    <nav class="breadcrumb-nav">
+        <a href="/" class="breadcrumb-link">← 返回首頁</a>
+    </nav>
+    <div class="page-header-content">
+        <div class="page-header-text">
+            <h1 class="page-title">活動管理</h1>
+            <p class="page-subtitle">管理與追蹤所有會員驗證活動</p>
         </div>
-        <a class="btn btn-primary" href="/events/new">建立新活動</a>
-    </header>
-</section>
-
-{% if events.is_empty() %}
-    <div class="alert alert-info">找不到活動。 <a class="alert-link" href="/events/new">建立新活動</a></div>
-{% else %}
-    <div class="row row-cols-1 row-cols-md-2 g-3">
-        {% for event in events %}
-            <div class="col">
-                <article class="card h-100">
-                    <div class="card-body">
-                        <h2 class="h5 card-title"><a class="stretched-link text-decoration-none" href="/events/{{ event.id }}">{{ event.event_name }}</a></h2>
-                        <dl class="row mb-0 text-secondary small">
-                            <dt class="col-4">日期</dt>
-                            <dd class="col-8 text-body">{{ event.event_date }}</dd>
-                        {% match event.event_location %}
-                            {% when Some with (loc) %}
-                                <dt class="col-4">地點</dt>
-                                <dd class="col-8 text-body">{{ loc }}</dd>
-                            {% when None %}
-                        {% endmatch %}
-                        </dl>
-                    </div>
-                </article>
-            </div>
-        {% endfor %}
+        <div class="page-header-actions">
+            <a href="/events/new" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                建立新活動
+            </a>
+        </div>
     </div>
-{% endif %}
+</div>
+
+<div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem;">
+    {% if events.is_empty() %}
+        <div class="empty-state animate-fade-in stagger-1">
+            <div class="empty-icon">
+                <i class="bi bi-calendar-event"></i>
+            </div>
+            <h3 class="empty-title">尚無活動</h3>
+            <p class="empty-description">建立您的第一個活動，開始驗證會員身份</p>
+            <a href="/events/new" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i>
+                建立新活動
+            </a>
+        </div>
+    {% else %}
+        <!-- Filter Pills (可選：如果有過濾功能) -->
+        <!-- <div class="filter-pills animate-fade-in">
+            <button class="filter-pill active">全部</button>
+            <button class="filter-pill">即將到來</button>
+            <button class="filter-pill">已結束</button>
+        </div> -->
+
+        <div class="event-timeline">
+            {% for event in events %}
+                <div class="event-timeline-item">
+                    <div class="event-date-badge">
+                        <span class="event-date-month">
+                            {{ event.event_date.format("%b").to_string().to_uppercase() }}
+                        </span>
+                        <span class="event-date-day">
+                            {{ event.event_date.format("%d") }}
+                        </span>
+                        <span class="event-date-year">
+                            {{ event.event_date.format("%Y") }}
+                        </span>
+                    </div>
+
+                    <a href="/events/{{ event.id }}" class="event-card-link">
+                        <article class="event-timeline-card">
+                            <h2 class="event-card-title">{{ event.event_name }}</h2>
+
+                            <div class="event-card-meta">
+                                {% match event.event_location %}
+                                    {% when Some with (loc) %}
+                                        <div class="event-meta-item">
+                                            <i class="bi bi-geo-alt-fill"></i>
+                                            <span>{{ loc }}</span>
+                                        </div>
+                                    {% when None %}
+                                        <div class="event-meta-item">
+                                            <i class="bi bi-globe"></i>
+                                            <span>線上活動</span>
+                                        </div>
+                                {% endmatch %}
+
+                                <div class="event-meta-item">
+                                    <i class="bi bi-calendar3"></i>
+                                    <span>{{ event.event_date.format("%Y年%m月%d日") }}</span>
+                                </div>
+                            </div>
+
+                            {% match event.event_description %}
+                                {% when Some with (desc) %}
+                                    <p class="card-description">{{ desc }}</p>
+                                {% when None %}
+                            {% endmatch %}
+
+                            <div class="card-meta">
+                                <span class="card-badge">
+                                    <i class="bi bi-arrow-right"></i>
+                                    查看詳情
+                                </span>
+                            </div>
+                        </article>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

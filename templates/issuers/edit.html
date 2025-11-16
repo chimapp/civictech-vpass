@@ -1,53 +1,188 @@
 {% extends "base.html" %}
 
-{% block title %}編輯發行者 - VPass{% endblock %}
+{% block title %}編輯發行者{% endblock %}
 
 {% block content %}
-    <nav aria-label="上一頁" class="mb-3">
-        <a class="btn btn-link px-0" href="/issuers">&larr; 返回發行者</a>
+<div class="page-header animate-fade-in">
+    <nav class="breadcrumb-nav">
+        <a href="/issuers" class="breadcrumb-link">← 返回發行者列表</a>
     </nav>
+    <div class="page-header-content">
+        <div class="page-header-text">
+            <h1 class="page-title">編輯發行者</h1>
+            <p class="page-subtitle">更新發行者資訊與設定</p>
+        </div>
+    </div>
+</div>
 
-    <header class="mb-4">
-        <h1 class="h3 mb-1">編輯發行者</h1>
-        <p class="text-secondary mb-0">更新發行者資訊</p>
-    </header>
+<div class="container" style="max-width: 900px; margin: 0 auto; padding: 0 1rem 3rem;">
+    <form action="/issuers/{{ issuer.id }}" method="POST">
+        <!-- Section 01: 基本資訊 -->
+        <div class="form-section animate-fade-in stagger-1">
+            <div class="form-section-header">
+                <span class="section-number">01</span>
+                <h3 class="section-title">基本資訊</h3>
+            </div>
 
-    <form action="/issuers/{{ issuer.id }}" method="POST" class="app-section row g-3">
-        <div class="col-md-6">
-            <label class="form-label" for="youtube_channel_id">YouTube Channel ID</label>
-            <input type="text" class="form-control" id="youtube_channel_id" value="{{ issuer.youtube_channel_id }}" readonly>
-            <div class="form-text">Channel ID 無法變更</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                <div class="form-field">
+                    <label class="field-label" for="youtube_channel_id">YouTube Channel ID</label>
+                    <input
+                        type="text"
+                        class="field-input"
+                        id="youtube_channel_id"
+                        value="{{ issuer.youtube_channel_id }}"
+                        readonly
+                        style="background: var(--color-ghost); cursor: not-allowed;"
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-lock"></i>
+                        Channel ID 無法變更
+                    </span>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label required" for="channel_name">頻道名稱</label>
+                    <input
+                        type="text"
+                        class="field-input"
+                        name="channel_name"
+                        id="channel_name"
+                        value="{{ issuer.channel_name }}"
+                        required
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-youtube"></i>
+                        將顯示在會員卡片上的頻道名稱
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label class="field-label" for="channel_handle">頻道代號</label>
+                <input
+                    type="text"
+                    class="field-input"
+                    name="channel_handle"
+                    id="channel_handle"
+                    value="{{ issuer.channel_handle.as_deref().unwrap_or("") }}"
+                    placeholder="@mychannel"
+                >
+                <span class="field-hint">
+                    <i class="bi bi-at"></i>
+                    頻道的 @ 名稱（選填）
+                </span>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label" for="channel_name">頻道名稱</label>
-            <input type="text" class="form-control" name="channel_name" id="channel_name" value="{{ issuer.channel_name }}">
+        <!-- Section 02: 驗證設定 -->
+        <div class="form-section animate-fade-in stagger-2">
+            <div class="form-section-header">
+                <span class="section-number">02</span>
+                <h3 class="section-title">驗證設定</h3>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                <div class="form-field">
+                    <label class="field-label required" for="verification_video_id">驗證影片 ID</label>
+                    <input
+                        type="text"
+                        class="field-input"
+                        name="verification_video_id"
+                        id="verification_video_id"
+                        value="{{ issuer.verification_video_id }}"
+                        required
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-film"></i>
+                        會員將在此影片發布驗證留言
+                    </span>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label required" for="default_membership_label">預設會員標籤</label>
+                    <input
+                        type="text"
+                        class="field-input"
+                        name="default_membership_label"
+                        id="default_membership_label"
+                        value="{{ issuer.default_membership_label }}"
+                        required
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-tag"></i>
+                        在卡片上顯示的標籤
+                    </span>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label" for="channel_handle">頻道代號</label>
-            <input type="text" class="form-control" name="channel_handle" id="channel_handle" value="{{ issuer.channel_handle.as_deref().unwrap_or("") }}">
+        <!-- Section 03: 進階設定 -->
+        <div class="form-section animate-fade-in stagger-3">
+            <div class="form-section-header">
+                <span class="section-number">03</span>
+                <h3 class="section-title">進階設定</h3>
+            </div>
+
+            <div class="form-field">
+                <label class="field-label" for="vc_uid">Taiwan Digital Wallet VC UID</label>
+                <input
+                    type="text"
+                    class="field-input"
+                    name="vc_uid"
+                    id="vc_uid"
+                    value="{{ issuer.vc_uid.as_deref().unwrap_or("") }}"
+                    placeholder="例如：0019930579_hoshiyomi"
+                >
+                <span class="field-hint">
+                    <i class="bi bi-wallet2"></i>
+                    用於 Taiwan Digital Wallet QR code 產生的 VC UID（選填）
+                </span>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label" for="verification_video_id">驗證影片 ID</label>
-            <input type="text" class="form-control" name="verification_video_id" id="verification_video_id" value="{{ issuer.verification_video_id }}">
-            <div class="form-text">會員將在此影片發布驗證留言。</div>
+        <!-- Info Box -->
+        <div class="form-section animate-fade-in stagger-4" style="background: rgba(0, 217, 255, 0.05); border-color: rgba(0, 217, 255, 0.3);">
+            <div style="display: flex; align-items: start; gap: 1rem;">
+                <i class="bi bi-lightbulb-fill" style="font-size: 1.5rem; color: var(--color-cyan); flex-shrink: 0;"></i>
+                <div>
+                    <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-ink); margin-bottom: 0.5rem;">
+                        變更將即時生效
+                    </h4>
+                    <p style="font-size: 0.9375rem; color: var(--color-slate); line-height: 1.6; margin: 0;">
+                        更新發行者資訊後，變更將立即套用到所有相關的會員卡片。請確保所有資訊正確無誤。
+                    </p>
+                </div>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label" for="default_membership_label">預設會員標籤</label>
-            <input type="text" class="form-control" name="default_membership_label" id="default_membership_label" value="{{ issuer.default_membership_label }}">
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label" for="vc_uid">Taiwan Digital Wallet VC UID</label>
-            <input type="text" class="form-control" name="vc_uid" id="vc_uid" value="{{ issuer.vc_uid.as_deref().unwrap_or("") }}" placeholder="例如：0019930579_hoshiyomi">
-            <div class="form-text">選填：用於 Taiwan Digital Wallet QR code 產生的 VC UID。</div>
-        </div>
-
-        <div class="col-12">
-            <button type="submit" class="btn btn-primary w-100">更新發行者</button>
+        <!-- Submit Actions -->
+        <div class="animate-fade-in stagger-5" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+            <a href="/issuers" class="btn btn-ghost">
+                <i class="bi bi-x-circle"></i>
+                取消
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i>
+                更新發行者
+            </button>
         </div>
     </form>
+</div>
+
+<style>
+.field-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--color-slate);
+    margin-top: 0.5rem;
+}
+
+.field-hint i {
+    font-size: 0.875rem;
+    color: var(--color-cyan);
+}
+</style>
 {% endblock %}

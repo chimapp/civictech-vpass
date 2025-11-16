@@ -24,6 +24,21 @@
                 <i class="bi bi-shield-check"></i>
                 <span>VPass</span>
             </a>
+
+            {% if is_authenticated %}
+            <nav class="main-nav">
+                <button class="nav-toggle" aria-label="選單" aria-expanded="false">
+                    <i class="bi bi-list"></i>
+                </button>
+                <ul class="nav-menu">
+                    <li><a href="/cards/my-cards" class="nav-link">我的卡片</a></li>
+                    <li><a href="/issuers" class="nav-link">頻道</a></li>
+                    <li><a href="/events" class="nav-link">活動</a></li>
+                    <li><a href="/verify" class="nav-link">驗證</a></li>
+                </ul>
+            </nav>
+            {% endif %}
+
             <div class="d-flex align-items-center gap-2">
                 {% block header_actions %}{% endblock %}
             </div>
@@ -43,6 +58,31 @@
         crossorigin="anonymous"
         defer
     ></script>
+    <script>
+        // Mobile navigation toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const navToggle = document.querySelector('.nav-toggle');
+            const navMenu = document.querySelector('.nav-menu');
+
+            if (navToggle && navMenu) {
+                navToggle.addEventListener('click', function() {
+                    const isExpanded = navToggle.getAttribute('aria-expanded') === 'true';
+                    navToggle.setAttribute('aria-expanded', !isExpanded);
+                    navMenu.classList.toggle('nav-menu-open');
+                    navToggle.querySelector('i').className = isExpanded ? 'bi bi-list' : 'bi bi-x';
+                });
+
+                // Close menu when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                        navMenu.classList.remove('nav-menu-open');
+                        navToggle.setAttribute('aria-expanded', 'false');
+                        navToggle.querySelector('i').className = 'bi bi-list';
+                    }
+                });
+            }
+        });
+    </script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

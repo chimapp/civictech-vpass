@@ -1,114 +1,274 @@
 {% extends "base.html" %}
 
-{% block title %}建立發行者 - VPass{% endblock %}
+{% block title %}建立發行者{% endblock %}
 
 {% block content %}
-    <nav aria-label="上一頁" class="mb-3">
-        <a class="btn btn-link px-0" href="/issuers">&larr; 返回發行者</a>
+<div class="page-header animate-fade-in">
+    <nav class="breadcrumb-nav">
+        <a href="/issuers" class="breadcrumb-link">← 返回發行者列表</a>
     </nav>
+    <div class="page-header-content">
+        <div class="page-header-text">
+            <h1 class="page-title">建立發行者</h1>
+            <p class="page-subtitle">註冊新的卡片發行者，開始為會員發行數位卡片</p>
+        </div>
+    </div>
+</div>
 
-    <header class="mb-4">
-        <h1 class="h3 mb-1">建立發行者</h1>
-        <p class="text-secondary mb-0">註冊新的卡片發行者</p>
-    </header>
+<div class="container" style="max-width: 900px; margin: 0 auto; padding: 0 1rem 3rem;">
+    <form action="/issuers" method="POST">
+        <!-- Section 00: 快速填寫 -->
+        <div class="form-section animate-fade-in stagger-1" style="background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(26, 31, 58, 0.05)); border-color: rgba(0, 217, 255, 0.3);">
+            <div class="form-section-header">
+                <span class="section-number" style="background: linear-gradient(135deg, var(--color-cyan), var(--color-amber));">✨</span>
+                <h3 class="section-title">從 YouTube 快速填寫</h3>
+            </div>
 
-    <form action="/issuers" method="POST" class="app-section">
-        <section aria-label="從 YouTube 快速填寫" class="mb-4">
-            <h2 class="h5 mb-3">從 YouTube 快速填寫</h2>
-            <div class="row g-2 align-items-end">
-                <div class="col-md-8">
-                    <label class="form-label" for="channel_url">頻道網址</label>
-                    <input type="text" class="form-control" id="channel_url" placeholder="https://www.youtube.com/@Dokibird">
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end;">
+                <div class="form-field" style="margin: 0;">
+                    <label class="field-label" for="channel_url">頻道網址</label>
+                    <input
+                        type="text"
+                        class="field-input"
+                        id="channel_url"
+                        placeholder="https://www.youtube.com/@Dokibird"
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-magic"></i>
+                        貼上 YouTube 頻道網址，我們會自動填寫頻道資訊
+                    </span>
                 </div>
-                <div class="col-md-4">
-                    <button type="button" id="autofill-btn" class="btn btn-outline-primary w-100">自動填寫</button>
+                <button type="button" id="autofill-btn" class="btn btn-primary" style="height: fit-content; padding: 0.875rem 1.5rem;">
+                    <i class="bi bi-lightning-fill"></i>
+                    自動填寫
+                </button>
+            </div>
+
+            <div id="error-message" class="d-none" style="margin-top: 1rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-size: 0.9375rem;">
+            </div>
+        </div>
+
+        <!-- Section 01: 基本資訊 -->
+        <div class="form-section animate-fade-in stagger-2">
+            <div class="form-section-header">
+                <span class="section-number">01</span>
+                <h3 class="section-title">基本資訊</h3>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                <div class="form-field">
+                    <label class="field-label required" for="youtube_channel_id">YouTube Channel ID</label>
+                    <input
+                        type="text"
+                        class="field-input"
+                        name="youtube_channel_id"
+                        id="youtube_channel_id"
+                        required
+                        placeholder="UCxxxxxxxxxxxxxxxxxxx"
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-key"></i>
+                        YouTube 頻道的唯一識別碼
+                    </span>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label required" for="channel_name">頻道名稱</label>
+                    <input
+                        type="text"
+                        class="field-input"
+                        name="channel_name"
+                        id="channel_name"
+                        required
+                        placeholder="我的頻道"
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-youtube"></i>
+                        將顯示在會員卡片上的頻道名稱
+                    </span>
                 </div>
             </div>
-            <div id="error-message" class="alert alert-warning mt-3 d-none" role="status"></div>
-        </section>
 
-        <section aria-label="基本資訊" class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label" for="youtube_channel_id">YouTube Channel ID（必填）</label>
-                <input type="text" class="form-control" name="youtube_channel_id" id="youtube_channel_id" required placeholder="UCxxxxxxxxxxxxxxxxxxx">
-                <div class="form-text">YouTube 頻道的唯一識別碼。</div>
+            <div class="form-field">
+                <label class="field-label" for="channel_handle">頻道代號</label>
+                <input
+                    type="text"
+                    class="field-input"
+                    name="channel_handle"
+                    id="channel_handle"
+                    placeholder="@mychannel"
+                >
+                <span class="field-hint">
+                    <i class="bi bi-at"></i>
+                    頻道的 @ 名稱（選填）
+                </span>
+            </div>
+        </div>
+
+        <!-- Section 02: 驗證設定 -->
+        <div class="form-section animate-fade-in stagger-3">
+            <div class="form-section-header">
+                <span class="section-number">02</span>
+                <h3 class="section-title">驗證設定</h3>
             </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="channel_name">頻道名稱（必填）</label>
-                <input type="text" class="form-control" name="channel_name" id="channel_name" required placeholder="我的頻道">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                <div class="form-field">
+                    <label class="field-label required" for="verification_video_id">驗證影片 ID</label>
+                    <input
+                        type="text"
+                        class="field-input"
+                        name="verification_video_id"
+                        id="verification_video_id"
+                        required
+                        placeholder="dQw4w9WgXcQ"
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-film"></i>
+                        會員將在此影片發布驗證留言
+                    </span>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label required" for="default_membership_label">預設會員標籤</label>
+                    <input
+                        type="text"
+                        class="field-input"
+                        name="default_membership_label"
+                        id="default_membership_label"
+                        required
+                        value="會員"
+                        placeholder="會員"
+                    >
+                    <span class="field-hint">
+                        <i class="bi bi-tag"></i>
+                        在卡片上顯示的標籤（例如：「會員」、「訂閱者」）
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 03: 進階設定 -->
+        <div class="form-section animate-fade-in stagger-4">
+            <div class="form-section-header">
+                <span class="section-number">03</span>
+                <h3 class="section-title">進階設定</h3>
             </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="channel_handle">頻道代號</label>
-                <input type="text" class="form-control" name="channel_handle" id="channel_handle" placeholder="@mychannel">
-                <div class="form-text">選填：頻道的 @ 名字。</div>
+            <div class="form-field">
+                <label class="field-label" for="vc_uid">Taiwan Digital Wallet VC UID</label>
+                <input
+                    type="text"
+                    class="field-input"
+                    name="vc_uid"
+                    id="vc_uid"
+                    placeholder="例如：0019930579_hoshiyomi"
+                >
+                <span class="field-hint">
+                    <i class="bi bi-wallet2"></i>
+                    用於 Taiwan Digital Wallet QR code 產生的 VC UID（選填）
+                </span>
             </div>
+        </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="verification_video_id">驗證影片 ID（必填）</label>
-                <input type="text" class="form-control" name="verification_video_id" id="verification_video_id" required placeholder="dQw4w9WgXcQ">
-                <div class="form-text">會員將在此影片發布驗證留言。</div>
+        <!-- Info Box -->
+        <div class="form-section animate-fade-in stagger-5" style="background: rgba(251, 191, 36, 0.05); border-color: rgba(251, 191, 36, 0.3);">
+            <div style="display: flex; align-items: start; gap: 1rem;">
+                <i class="bi bi-info-circle-fill" style="font-size: 1.5rem; color: var(--color-amber); flex-shrink: 0;"></i>
+                <div>
+                    <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-ink); margin-bottom: 0.5rem;">
+                        準備好建立發行者了嗎？
+                    </h4>
+                    <p style="font-size: 0.9375rem; color: var(--color-slate); line-height: 1.6; margin: 0;">
+                        建立發行者後，您就可以開始為頻道會員發行數位卡片。確保所有資訊正確，特別是 Channel ID 和驗證影片 ID。
+                    </p>
+                </div>
             </div>
+        </div>
 
-            <div class="col-md-6">
-                <label class="form-label" for="default_membership_label">預設會員標籤（必填）</label>
-                <input type="text" class="form-control" name="default_membership_label" id="default_membership_label" required placeholder="會員" value="會員">
-                <div class="form-text">在卡片上顯示的標籤（例如：「會員」、「訂閱者」）。</div>
-            </div>
-        </section>
-
-        <div class="mt-4">
-            <button type="submit" class="btn btn-primary w-100">建立發行者</button>
+        <!-- Submit Actions -->
+        <div class="animate-fade-in stagger-6" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+            <a href="/issuers" class="btn btn-ghost">
+                <i class="bi bi-x-circle"></i>
+                取消
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i>
+                建立發行者
+            </button>
         </div>
     </form>
+</div>
 
-    <script>
-        document.getElementById('autofill-btn').addEventListener('click', async function() {
-            const urlInput = document.getElementById('channel_url');
-            const url = urlInput.value.trim();
-            const errorDiv = document.getElementById('error-message');
-            const btn = this;
+<style>
+.field-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--color-slate);
+    margin-top: 0.5rem;
+}
 
-            if (!url) {
-                errorDiv.textContent = '請輸入 YouTube 頻道網址';
-                errorDiv.classList.remove('d-none');
-                return;
-            }
+.field-hint i {
+    font-size: 0.875rem;
+    color: var(--color-cyan);
+}
+</style>
 
-            errorDiv.classList.add('d-none');
-            btn.disabled = true;
-            btn.textContent = '載入中...';
+<script>
+document.getElementById('autofill-btn').addEventListener('click', async function() {
+    const urlInput = document.getElementById('channel_url');
+    const url = urlInput.value.trim();
+    const errorDiv = document.getElementById('error-message');
+    const btn = this;
 
-            try {
-                const response = await fetch(`/issuers/autofill?url=${encodeURIComponent(url)}`);
+    if (!url) {
+        errorDiv.textContent = '請輸入 YouTube 頻道網址';
+        errorDiv.classList.remove('d-none');
+        return;
+    }
 
-                if (!response.ok) {
-                    const text = await response.text();
-                    throw new Error(text || '無法取得頻道資訊');
-                }
+    errorDiv.classList.add('d-none');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 載入中...';
 
-                const data = await response.json();
+    try {
+        const response = await fetch(`/issuers/autofill?url=${encodeURIComponent(url)}`);
 
-                document.getElementById('youtube_channel_id').value = data.channel_id;
-                document.getElementById('channel_name').value = data.channel_name;
-                document.getElementById('channel_handle').value = data.channel_handle;
-                urlInput.value = '';
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text || '無法取得頻道資訊');
+        }
 
-            } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.classList.remove('d-none');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '自動填寫';
-            }
-        });
+        const data = await response.json();
 
-        document.getElementById('channel_url').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                document.getElementById('autofill-btn').click();
-            }
-        });
-    </script>
+        document.getElementById('youtube_channel_id').value = data.channel_id;
+        document.getElementById('channel_name').value = data.channel_name;
+        document.getElementById('channel_handle').value = data.channel_handle;
+        urlInput.value = '';
+
+        // Success feedback
+        const successDiv = document.createElement('div');
+        successDiv.style.cssText = 'margin-top: 1rem; padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 2px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: #10b981; font-size: 0.9375rem;';
+        successDiv.innerHTML = '<i class="bi bi-check-circle-fill"></i> 頻道資訊已自動填入！';
+        errorDiv.parentElement.insertBefore(successDiv, errorDiv.nextSibling);
+        setTimeout(() => successDiv.remove(), 3000);
+
+    } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-lightning-fill"></i> 自動填寫';
+    }
+});
+
+document.getElementById('channel_url').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('autofill-btn').click();
+    }
+});
+</script>
 {% endblock %}

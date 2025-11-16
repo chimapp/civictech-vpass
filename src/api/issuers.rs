@@ -7,9 +7,10 @@ use axum::{
     Form, Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use tower_sessions::Session;
 use uuid::Uuid;
 
-use crate::api::middleware::session::AppState;
+use crate::api::middleware::session::{AppState, SESSION_KEY_MEMBER_ID};
 use crate::models::issuer::{CardIssuer, CreateIssuerData};
 use crate::services::youtube_channel;
 
@@ -19,6 +20,7 @@ pub enum IssuersError {
     NotFound,
     ValidationError(String),
     YouTubeApiError(youtube_channel::YouTubeChannelError),
+    SessionError(String),
 }
 
 impl IntoResponse for IssuersError {
@@ -33,6 +35,10 @@ impl IntoResponse for IssuersError {
             IssuersError::YouTubeApiError(e) => {
                 (StatusCode::BAD_REQUEST, format!("YouTube API error: {}", e))
             }
+            IssuersError::SessionError(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Session error: {}", msg),
+            ),
         };
 
         (status, message).into_response()
@@ -44,30 +50,52 @@ impl IntoResponse for IssuersError {
 #[template(path = "issuers/list.html")]
 struct ListIssuersTemplate {
     issuers: Vec<CardIssuer>,
+    is_authenticated: bool,
 }
 
 #[derive(Template)]
 #[template(path = "issuers/new.html")]
-struct NewIssuerTemplate;
+struct NewIssuerTemplate {
+    is_authenticated: bool,
+}
 
 #[derive(Template)]
 #[template(path = "issuers/edit.html")]
 struct EditIssuerTemplate {
     issuer: CardIssuer,
+    is_authenticated: bool,
+}
+
+async fn is_authenticated(session: &Session) -> Result<bool, IssuersError> {
+    let member_id: Option<Uuid> = session
+        .get(SESSION_KEY_MEMBER_ID)
+        .await
+        .map_err(|e| IssuersError::SessionError(e.to_string()))?;
+
+    Ok(member_id.is_some())
 }
 
 /// List all issuers
-async fn list_issuers(State(state): State<AppState>) -> Result<ListIssuersTemplate, IssuersError> {
+async fn list_issuers(
+    State(state): State<AppState>,
+    session: Session,
+) -> Result<ListIssuersTemplate, IssuersError> {
     let issuers = CardIssuer::list_active(&state.pool)
         .await
         .map_err(IssuersError::DatabaseError)?;
 
-    Ok(ListIssuersTemplate { issuers })
+    let is_authenticated = is_authenticated(&session).await?;
+
+    Ok(ListIssuersTemplate {
+        issuers,
+        is_authenticated,
+    })
 }
 
 /// Show create form
-async fn new_issuer_form() -> NewIssuerTemplate {
-    NewIssuerTemplate
+async fn new_issuer_form(session: Session) -> Result<NewIssuerTemplate, IssuersError> {
+    let is_authenticated = is_authenticated(&session).await?;
+    Ok(NewIssuerTemplate { is_authenticated })
 }
 
 #[derive(Deserialize)]
@@ -134,13 +162,19 @@ async fn create_issuer(
 async fn edit_issuer_form(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
+    session: Session,
 ) -> Result<EditIssuerTemplate, IssuersError> {
     let issuer = CardIssuer::find_by_id(&state.pool, id)
         .await
         .map_err(IssuersError::DatabaseError)?
         .ok_or(IssuersError::NotFound)?;
 
-    Ok(EditIssuerTemplate { issuer })
+    let is_authenticated = is_authenticated(&session).await?;
+
+    Ok(EditIssuerTemplate {
+        issuer,
+        is_authenticated,
+    })
 }
 
 #[derive(Deserialize)]

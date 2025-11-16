@@ -1,103 +1,150 @@
 {% extends "base.html" %}
 
-{% block title %}卡片 - VPass{% endblock %}
+{% block title %}{{ card.membership_level_label }} - VPass{% endblock %}
 
 {% block content %}
-<nav aria-label="上一頁" class="mb-3">
-    <a class="btn btn-link px-0" href="/cards/my-cards">&larr; 返回我的卡片</a>
-</nav>
-
-<div class="row g-4">
-    <div class="col-lg-6">
-        <div class="app-section">
-            {% if card.is_expired() %}
-                <div class="alert alert-danger" role="status">已過期</div>
-            {% else %}
-                <div class="alert alert-success" role="status">有效卡片</div>
-            {% endif %}
-
-{% if !card.is_expired() && card.wallet_qr_code.is_some() %}
-    {% let cid_present = card.wallet_cid.is_some() %}
-            <section class="mt-3" data-credential-status data-poll-url="/cards/{{ card.id }}/poll-credential" data-cid-present="{{ cid_present }}" data-max-polls="150" aria-live="polite">
-                <p class="d-flex align-items-center gap-2">
-                    <span class="spinner-border text-primary" data-role="spinner" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </span>
-                    <span data-role="status-text">
-                {% if cid_present %}
-                    憑證已發行！
-                {% else %}
-                    等待皮夾掃描...
-                {% endif %}
-            </span>
-        </p>
-                <p class="mb-2">
-            {% if cid_present %}
-                憑證已在您的數位皮夾中準備就緒。
-            {% else %}
-                請使用數位皮夾應用程式掃描 QR Code。
-            {% endif %}
-        </p>
-                <p data-role="poll-info" class="text-secondary small mb-0">
-            {% if cid_present %}
-                憑證已準備就緒。
-            {% else %}
-                檢查狀態中...
-            {% endif %}
-        </p>
-    </section>
-{% endif %}
-
-            <section aria-label="卡片內容" class="mt-4">
-                <h2 class="h4">{{ card.membership_level_label }}</h2>
-
-    {% if card.is_expired() %}
-                    <p class="text-danger">卡片已過期</p>
-    {% else if let Some(qr_code) = card.wallet_qr_code.as_deref() %}
-        {% if card.wallet_cid.is_none() %}
-                        <figure class="text-center">
-                            <img class="img-fluid rounded shadow-sm mb-2" src="{{ qr_code }}" alt="數位皮夾 QR Code">
-                            <figcaption class="text-secondary small">使用數位皮夾掃描</figcaption>
-            </figure>
-        {% else %}
-                        <p class="text-success">憑證已發行</p>
-        {% endif %}
-    {% else %}
-                    <p class="text-danger">QR Code 無法使用</p>
-    {% endif %}
-</section>
+<div class="page-header animate-fade-in">
+    <nav class="breadcrumb-nav">
+        <a href="/cards/my-cards" class="breadcrumb-link">← 返回我的卡片</a>
+    </nav>
+    <div class="page-header-content">
+        <div class="page-header-text">
+            <h1 class="page-title">{{ card.membership_level_label }}</h1>
+            <p class="page-subtitle">數位會員驗證卡</p>
         </div>
     </div>
+</div>
 
-    <div class="col-lg-6">
-        <section class="app-section" aria-label="卡片資訊">
-            <dl class="row mb-0">
-                <dt class="col-sm-4">已確認</dt>
-                <dd class="col-sm-8">{{ card.membership_confirmed_at.format("%Y-%m-%d %H:%M UTC") }}</dd>
-                <dt class="col-sm-4">已發行</dt>
-                <dd class="col-sm-8">{{ card.issued_at.format("%Y-%m-%d %H:%M UTC") }}</dd>
-        {% if let Some(expires_at) = card.expires_at %}
-                <dt class="col-sm-4">到期日</dt>
-                <dd class="col-sm-8">{{ expires_at.format("%Y-%m-%d") }}</dd>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+    <div class="animate-fade-in stagger-1" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Status Indicator -->
+        {% if card.is_expired() %}
+            <div class="status-badge status-expired" style="display: inline-flex; width: fit-content;">
+                <span class="status-pulse" style="background: #ef4444;"></span>
+                <span>卡片已過期</span>
+            </div>
+        {% else %}
+            <div class="status-badge status-active" style="display: inline-flex; width: fit-content;">
+                <span class="status-pulse"></span>
+                <span>卡片有效</span>
+            </div>
         {% endif %}
-                <dt class="col-sm-4">卡片 ID</dt>
-                <dd class="col-sm-8">{{ card.id }}</dd>
-            </dl>
-        </section>
 
-        <section class="app-section mt-4" aria-label="可用操作">
-            <div class="d-flex flex-wrap gap-2">
-        {% if card.wallet_cid.is_none() %}
-            {% if let Some(deep_link) = card.wallet_deep_link.as_deref() %}
-                    <a class="btn btn-outline-primary" href="{{ deep_link }}">在數位皮夾應用程式中開啟</a>
+        <!-- QR Code Viewer -->
+        {% if !card.is_expired() && card.wallet_qr_code.is_some() %}
+            {% let cid_present = card.wallet_cid.is_some() %}
+
+            <div class="qr-viewer-container" style="background: white; border-radius: 16px; padding: 2rem; border: 2px solid var(--color-mist);">
+                {% if card.wallet_cid.is_none() %}
+                    <div class="qr-viewer" style="margin: 0 auto;">
+                        <img class="qr-code-image" src="{{ card.wallet_qr_code.as_deref().unwrap() }}" alt="數位皮夾 QR Code">
+                    </div>
+                    <div class="qr-countdown" style="margin-top: 1.5rem; text-align: center;">
+                        使用數位皮夾掃描 QR Code
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 3rem 2rem;">
+                        <div style="font-size: 4rem; color: #10b981; margin-bottom: 1rem;">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <h3 style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: #10b981; margin-bottom: 0.5rem;">憑證已發行</h3>
+                        <p style="color: var(--color-slate); margin: 0;">憑證已在您的數位皮夾中準備就緒</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Credential Status Polling -->
+            {% if card.wallet_cid.is_none() %}
+                <div data-credential-status data-poll-url="/cards/{{ card.id }}/poll-credential" data-cid-present="{{ cid_present }}" data-max-polls="150" aria-live="polite" style="background: rgba(0, 217, 255, 0.06); border: 1px solid rgba(0, 217, 255, 0.2); border-radius: 12px; padding: 1.25rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
+                        <span class="spinner-border text-primary" data-role="spinner" role="status" style="width: 1.25rem; height: 1.25rem; border-width: 2px;">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                        <span data-role="status-text" style="font-weight: 600; color: var(--color-ink);">等待皮夾掃描...</span>
+                    </div>
+                    <p data-role="poll-info" style="color: var(--color-slate); font-size: 0.875rem; margin: 0;">檢查狀態中...</p>
+                </div>
             {% endif %}
         {% endif %}
-                <a class="btn btn-outline-secondary" href="/cards/my-cards">查看所有卡片</a>
-                <button type="button" class="btn btn-outline-danger" data-delete-card="{{ card.id }}">刪除卡片</button>
+
+        <!-- Deep Link Button -->
+        {% if !card.is_expired() && card.wallet_cid.is_none() %}
+            {% if let Some(deep_link) = card.wallet_deep_link.as_deref() %}
+                <a href="{{ deep_link }}" class="btn btn-primary btn-lg" style="width: 100%;">
+                    <i class="bi bi-wallet-fill"></i>
+                    <span>在數位皮夾應用程式中開啟</span>
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="animate-fade-in stagger-2" style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Card Information -->
+        <div class="info-panel">
+            <h3 class="panel-heading">卡片資訊</h3>
+            <dl class="info-list">
+                <div>
+                    <dt>會員確認時間</dt>
+                    <dd>{{ card.membership_confirmed_at.format("%Y年%m月%d日 %H:%M UTC") }}</dd>
+                </div>
+                <div>
+                    <dt>發行日期</dt>
+                    <dd>{{ card.issued_at.format("%Y年%m月%d日 %H:%M UTC") }}</dd>
+                </div>
+                {% if let Some(expires_at) = card.expires_at %}
+                    <div>
+                        <dt>到期日</dt>
+                        <dd>{{ expires_at.format("%Y年%m月%d日") }}</dd>
+                    </div>
+                {% endif %}
+                <div>
+                    <dt>卡片 ID</dt>
+                    <dd style="font-family: monospace; font-size: 0.875rem;">{{ card.id }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Actions -->
+        <div style="background: white; border: 1px solid var(--color-mist); border-radius: 12px; padding: 1.5rem;">
+            <h3 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-ink); margin-bottom: 1.25rem; letter-spacing: -0.02em;">操作</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <a href="/cards/my-cards" class="btn btn-ghost" style="width: 100%; justify-content: center;">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                    <span>查看所有卡片</span>
+                </a>
+                <button type="button" class="btn btn-secondary" data-delete-card="{{ card.id }}" style="width: 100%; justify-content: center;">
+                    <i class="bi bi-trash-fill"></i>
+                    <span>刪除卡片</span>
+                </button>
             </div>
-        </section>
+        </div>
+
+        <!-- Help Info -->
+        <div style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; padding: 1.25rem;">
+            <div style="display: flex; gap: 1rem;">
+                <div style="color: var(--color-amber); font-size: 1.5rem; flex-shrink: 0;">
+                    <i class="bi bi-info-circle-fill"></i>
+                </div>
+                <div>
+                    <h4 style="font-weight: 700; color: var(--color-ink); font-size: 0.9375rem; margin-bottom: 0.5rem;">使用說明</h4>
+                    <p style="color: var(--color-slate); font-size: 0.875rem; line-height: 1.6; margin: 0;">
+                        請使用 Apple Wallet 或 Google Wallet 掃描 QR Code 將會員卡加入您的數位皮夾。參加活動時，向主辦方出示卡片即可完成身份驗證。
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Responsive Layout for Mobile -->
+<style>
+@media (max-width: 992px) {
+    div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
 {% endblock %}
 
 {% block extra_scripts %}

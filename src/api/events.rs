@@ -8,9 +8,10 @@ use axum::{
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use tower_sessions::Session;
 use uuid::Uuid;
 
-use crate::api::middleware::session::AppState;
+use crate::api::middleware::session::{AppState, SESSION_KEY_MEMBER_ID};
 use crate::models::event::{CreateEventData, Event, UpdateEventData};
 
 #[derive(Debug)]
@@ -18,6 +19,7 @@ pub enum EventError {
     DatabaseError(sqlx::Error),
     NotFound,
     ValidationError(String),
+    SessionError(String),
 }
 
 impl IntoResponse for EventError {
@@ -29,6 +31,10 @@ impl IntoResponse for EventError {
             ),
             EventError::NotFound => (StatusCode::NOT_FOUND, "Event not found".to_string()),
             EventError::ValidationError(msg) => (StatusCode::BAD_REQUEST, msg),
+            EventError::SessionError(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Session error: {}", msg),
+            ),
         };
 
         (status, message).into_response()
@@ -40,12 +46,14 @@ impl IntoResponse for EventError {
 #[template(path = "events/list.html")]
 struct EventListTemplate {
     events: Vec<Event>,
+    is_authenticated: bool,
 }
 
 #[derive(Template)]
 #[template(path = "events/new.html")]
 struct NewEventTemplate {
     issuers: Vec<crate::models::issuer::CardIssuer>,
+    is_authenticated: bool,
 }
 
 #[derive(Template)]
@@ -54,6 +62,7 @@ struct ShowEventTemplate {
     event: Event,
     issuer: crate::models::issuer::CardIssuer,
     stats: EventStats,
+    is_authenticated: bool,
 }
 
 // Request/Response types
@@ -88,12 +97,33 @@ pub struct EventStats {
     pub unique_cards: i64,
 }
 
+impl EventStats {
+    pub fn success_rate_label(&self) -> Option<String> {
+        if self.total_scans > 0 {
+            let rate = self.successful_scans as f64 * 100.0 / self.total_scans as f64;
+            Some(format!("{:.1}", rate))
+        } else {
+            None
+        }
+    }
+}
+
+async fn is_authenticated(session: &Session) -> Result<bool, EventError> {
+    let member_id: Option<Uuid> = session
+        .get(SESSION_KEY_MEMBER_ID)
+        .await
+        .map_err(|e| EventError::SessionError(e.to_string()))?;
+
+    Ok(member_id.is_some())
+}
+
 // Handlers
 
 /// List events (HTML)
 async fn list_events_page(
     State(state): State<AppState>,
     Query(params): Query<ListEventsQuery>,
+    session: Session,
 ) -> Result<EventListTemplate, EventError> {
     let events = if let Some(issuer_id) = params.issuer_id {
         Event::list_by_issuer(&state.pool, issuer_id, params.active_only.unwrap_or(false))
@@ -105,7 +135,12 @@ async fn list_events_page(
             .map_err(EventError::DatabaseError)?
     };
 
-    Ok(EventListTemplate { events })
+    let is_authenticated = is_authenticated(&session).await?;
+
+    Ok(EventListTemplate {
+        events,
+        is_authenticated,
+    })
 }
 
 /// List events (JSON API)
@@ -127,12 +162,20 @@ async fn list_events_json(
 }
 
 /// New event page
-async fn new_event_page(State(state): State<AppState>) -> Result<NewEventTemplate, EventError> {
+async fn new_event_page(
+    State(state): State<AppState>,
+    session: Session,
+) -> Result<NewEventTemplate, EventError> {
     let issuers = crate::models::issuer::CardIssuer::list_active(&state.pool)
         .await
         .map_err(EventError::DatabaseError)?;
 
-    Ok(NewEventTemplate { issuers })
+    let is_authenticated = is_authenticated(&session).await?;
+
+    Ok(NewEventTemplate {
+        issuers,
+        is_authenticated,
+    })
 }
 
 /// Create event (HTML form)
@@ -202,6 +245,7 @@ async fn create_event_json(
 async fn show_event(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
+    session: Session,
 ) -> Result<ShowEventTemplate, EventError> {
     let event = Event::find_by_id(&state.pool, id)
         .await
@@ -247,10 +291,13 @@ async fn show_event(
         unique_cards,
     };
 
+    let is_authenticated = is_authenticated(&session).await?;
+
     Ok(ShowEventTemplate {
         event,
         issuer,
         stats,
+        is_authenticated,
     })
 }
 
