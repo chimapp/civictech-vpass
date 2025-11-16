@@ -1,54 +1,152 @@
 {% extends "base.html" %}
 
-{% block title %}VPass{% endblock %}
+{% block title %}VPass - 頻道會員數位驗證{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <section class="app-section text-center">
-            <header class="mb-4">
-                <p class="text-uppercase text-primary fw-semibold mb-1">VPass</p>
-                <h1 class="fw-bold">頻道會員驗證</h1>
-                <p class="text-secondary mb-0">使用數位卡片驗證 YouTube 會員身份</p>
-            </header>
+{% if is_authenticated %}
+<!-- Authenticated View -->
+<div class="home-authenticated">
+    <div class="diagonal-accent"></div>
 
-            {% if is_authenticated %}
-                <p class="text-success fw-semibold">您已登入 VPass</p>
-                <div class="row row-cols-2 row-cols-md-4 g-3 mb-4" aria-label="主要功能">
-                    <div class="col">
-                        <a class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center" href="/cards/my-cards">
-                            我的卡片
-                        </a>
-                    </div>
-                    <div class="col">
-                        <a class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center" href="/issuers">
-                            瀏覽頻道
-                        </a>
-                    </div>
-                    <div class="col">
-                        <a class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center" href="/events">
-                            活動
-                        </a>
-                    </div>
-                    <div class="col">
-                        <a class="btn btn-outline-primary w-100 h-100 d-flex flex-column justify-content-center" href="/verify">
-                            驗證掃描器
-                        </a>
-                    </div>
-                </div>
-                <form action="/auth/logout" method="POST" class="d-inline-block">
-                    <button type="submit" class="btn btn-danger">登出</button>
-                </form>
-            {% else %}
-                <div class="mb-4">
-                    <p class="lead mb-3">使用您的帳號登入以開始使用</p>
-                    <div class="d-flex flex-column gap-2 align-items-center">
-                        <a class="btn btn-primary px-4" href="/auth/youtube/login">使用 YouTube 登入</a>
-                    </div>
-                </div>
-                <p class="text-secondary">登入後即可領取與管理您的會員卡片</p>
-            {% endif %}
-        </section>
+    <div class="welcome-section">
+        <h1 class="welcome-title">
+            <span class="title-line">歡迎回到</span>
+            <span class="title-highlight">VPass</span>
+        </h1>
+    </div>
+
+    <div class="action-grid">
+        <a href="/cards/my-cards" class="action-tile action-tile-primary">
+            <div class="tile-corner"></div>
+            <div class="tile-icon">
+                <i class="bi bi-credit-card-2-front"></i>
+            </div>
+            <div class="tile-content">
+                <h3 class="tile-title">我的卡片</h3>
+                <p class="tile-desc">管理會員驗證卡</p>
+            </div>
+            <div class="tile-arrow">→</div>
+        </a>
+
+        <a href="/issuers" class="action-tile action-tile-secondary">
+            <div class="tile-corner"></div>
+            <div class="tile-icon">
+                <i class="bi bi-youtube"></i>
+            </div>
+            <div class="tile-content">
+                <h3 class="tile-title">瀏覽頻道</h3>
+                <p class="tile-desc">探索支援的創作者</p>
+            </div>
+            <div class="tile-arrow">→</div>
+        </a>
+
+        <a href="/events" class="action-tile action-tile-accent">
+            <div class="tile-corner"></div>
+            <div class="tile-icon">
+                <i class="bi bi-calendar-event"></i>
+            </div>
+            <div class="tile-content">
+                <h3 class="tile-title">活動</h3>
+                <p class="tile-desc">查看會員專屬活動</p>
+            </div>
+            <div class="tile-arrow">→</div>
+        </a>
+
+        <a href="/verify" class="action-tile action-tile-verify">
+            <div class="tile-corner"></div>
+            <div class="tile-icon">
+                <i class="bi bi-qr-code-scan"></i>
+            </div>
+            <div class="tile-content">
+                <h3 class="tile-title">驗證掃描器</h3>
+                <p class="tile-desc">掃描會員卡片</p>
+            </div>
+            <div class="tile-arrow">→</div>
+        </a>
+    </div>
+
+    <form action="/auth/logout" method="POST" class="logout-form">
+        <button type="submit" class="logout-btn">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>登出</span>
+        </button>
+    </form>
+</div>
+{% else %}
+<!-- Landing View -->
+<div class="home-landing">
+    <div class="diagonal-bg"></div>
+    <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="hero-container">
+        <h1 class="hero-title">
+            <span class="title-main">頻道會員</span>
+            <span class="title-sub">驗證平台</span>
+        </h1>
+
+        <p class="hero-lead">
+            為 YouTube 創作者社群打造的<br>
+            安全、快速、可信賴的會員身份驗證解決方案
+        </p>
+
+        <a href="/auth/youtube/login" class="cta-button">
+            <span class="cta-icon">
+                <i class="bi bi-youtube"></i>
+            </span>
+            <span class="cta-text">
+                <span class="cta-label">使用 YouTube 登入</span>
+                <span class="cta-hint">開始使用 VPass</span>
+            </span>
+            <span class="cta-arrow">
+                <i class="bi bi-arrow-right"></i>
+            </span>
+        </a>
+    </div>
+
+    <div class="features-container">
+        <div class="feature-item feature-item-1">
+            <div class="feature-number">01</div>
+            <div class="feature-icon-wrapper">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h3 class="feature-heading">企業級安全</h3>
+            <p class="feature-description">
+                OAuth 2.0 標準認證<br>
+                端到端加密保護<br>
+                符合資安最佳實踐
+            </p>
+        </div>
+
+        <div class="feature-item feature-item-2">
+            <div class="feature-number">02</div>
+            <div class="feature-icon-wrapper">
+                <i class="bi bi-lightning-charge-fill"></i>
+            </div>
+            <h3 class="feature-heading">即時驗證</h3>
+            <p class="feature-description">
+                掃描 QR Code 立即完成<br>
+                無需手動輸入資料<br>
+                毫秒級回應速度
+            </p>
+        </div>
+
+        <div class="feature-item feature-item-3">
+            <div class="feature-number">03</div>
+            <div class="feature-icon-wrapper">
+                <i class="bi bi-wallet-fill"></i>
+            </div>
+            <h3 class="feature-heading">數位錢包整合</h3>
+            <p class="feature-description">
+                支援 Apple Wallet<br>
+                支援 Google Wallet<br>
+                隨身攜帶會員卡
+            </p>
+        </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
