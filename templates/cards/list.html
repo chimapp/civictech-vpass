@@ -44,7 +44,6 @@
         {% for card in cards %}
             <a href="/cards/{{ card.id }}" class="content-card animate-fade-in stagger-{{ loop.index }}">
                 <div class="card-corner"></div>
-                <div class="card-number">{{ loop.index }}</div>
 
                 <div class="card-content">
                     <h3 class="card-title">{{ card.membership_level_label }}</h3>
