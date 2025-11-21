@@ -83,19 +83,19 @@
                     </div>
 
                     <!-- Primary Action: Claim Card -->
-                    <a href="/channels/{{ issuer.id }}/claim" class="issuer-primary-action">
-                        <div class="action-content">
-                            <div class="action-icon-wrapper">
-                                <i class="bi bi-credit-card-2-front"></i>
-                            </div>
-                            <div class="action-text">
-                                <span class="action-label">領取卡片</span>
-                                <span class="action-hint">為會員發行數位驗證卡</span>
-                            </div>
-                        </div>
-                        <i class="bi bi-arrow-right action-arrow"></i>
-                        <div class="action-shimmer"></div>
-                    </a>
+                    <div class="issuer-utility-row">
+                        <button type="button"
+                                class="copy-claim-btn"
+                                data-claim-url="/channels/{{ issuer.id }}/claim">
+                            <span class="utility-icon">
+                                <i class="bi bi-clipboard-check"></i>
+                            </span>
+                            <span class="utility-text">
+                                <span class="utility-label">複製領卡連結</span>
+                                <span class="utility-hint" data-original-hint=""></span>
+                            </span>
+                        </button>
+                    </div>
 
                     <!-- Secondary Actions Bar -->
                     <div class="issuer-secondary-actions">
@@ -148,119 +148,65 @@
    =========================== */
 
 /* Primary Action Button */
-.issuer-primary-action {
-    position: relative;
+.issuer-utility-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    width: 100%;
-    padding: 1.5rem 1.75rem;
-    margin-top: 1.5rem;
-    background: linear-gradient(135deg, var(--color-ink) 0%, #2a3052 100%);
-    border: none;
-    border-radius: 12px;
-    text-decoration: none;
-    color: white;
-    overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(26, 31, 58, 0.15);
+    margin: 0.5rem 0 1rem;
 }
 
-.issuer-primary-action::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-coral) 100%);
-    opacity: 0;
-    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.issuer-primary-action:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(26, 31, 58, 0.25);
-}
-
-.issuer-primary-action:hover::before {
-    opacity: 1;
-}
-
-.action-shimmer {
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.2),
-        transparent
-    );
-    transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.issuer-primary-action:hover .action-shimmer {
-    left: 100%;
-}
-
-.action-content {
-    position: relative;
-    z-index: 1;
-    display: flex;
+.copy-claim-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    background: var(--color-ghost);
+    border: 1px solid var(--color-mist);
+    border-radius: 999px;
+    color: var(--color-ink);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.action-icon-wrapper {
-    display: flex;
+.copy-claim-btn:hover {
+    border-color: var(--color-cyan);
+    box-shadow: 0 4px 12px rgba(0, 217, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.copy-claim-btn:active {
+    transform: translateY(0);
+}
+
+.utility-icon {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border-radius: 10px;
-    font-size: 1.5rem;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: white;
+    color: var(--color-cyan);
+    border: 1px solid var(--color-mist);
+    font-size: 1rem;
 }
 
-.issuer-primary-action:hover .action-icon-wrapper {
-    background: rgba(255, 255, 255, 0.25);
-    transform: rotate(-5deg) scale(1.05);
-}
-
-.action-text {
+.utility-text {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.1rem;
+    text-align: left;
 }
 
-.action-label {
+.utility-label {
     font-family: var(--font-display);
-    font-size: 1.125rem;
-    font-weight: 700;
     letter-spacing: -0.01em;
 }
 
-.action-hint {
-    font-size: 0.8125rem;
-    opacity: 0.85;
+.utility-hint {
+    font-size: 0.8rem;
+    color: var(--color-slate);
     font-weight: 500;
-}
-
-.action-arrow {
-    position: relative;
-    z-index: 1;
-    font-size: 1.5rem;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.issuer-primary-action:hover .action-arrow {
-    transform: translateX(4px);
 }
 
 /* Secondary Actions Bar */
@@ -370,22 +316,14 @@
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
-    .issuer-primary-action {
-        padding: 1.25rem 1.5rem;
+    .issuer-utility-row {
+        margin: 0.5rem 0 0.75rem;
     }
 
-    .action-icon-wrapper {
-        width: 40px;
-        height: 40px;
-        font-size: 1.25rem;
-    }
-
-    .action-label {
-        font-size: 1rem;
-    }
-
-    .action-hint {
-        font-size: 0.75rem;
+    .copy-claim-btn {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
     }
 
     .issuer-secondary-actions {
@@ -405,4 +343,63 @@
     }
 }
 </style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const copyClaimLink = async (text) => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                console.warn('Clipboard API failed, falling back.', err);
+            }
+        }
+
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.top = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        let success = false;
+        try {
+            success = document.execCommand('copy');
+        } catch (err) {
+            console.warn('Fallback copy failed.', err);
+        } finally {
+            document.body.removeChild(textarea);
+        }
+        return success;
+    };
+
+    const actionButtons = document.querySelectorAll('.copy-claim-btn');
+    actionButtons.forEach((button) => {
+        button.addEventListener('click', async () => {
+            const claimPath = button.getAttribute('data-claim-url');
+            if (!claimPath) return;
+
+            const absoluteUrl = new URL(claimPath, window.location.origin).toString();
+            const hintEl = button.querySelector('.utility-hint');
+            const originalHint = hintEl?.dataset.originalHint || hintEl?.textContent;
+
+            const didCopy = await copyClaimLink(absoluteUrl);
+            if (hintEl) {
+                hintEl.textContent = didCopy ? '已複製分享連結' : '複製失敗，請手動複製';
+                setTimeout(() => {
+                    hintEl.textContent = originalHint || '';
+                }, 2400);
+            }
+
+            if (!didCopy) {
+                window.prompt('請複製並分享以下連結：', absoluteUrl);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
