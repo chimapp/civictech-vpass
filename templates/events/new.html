@@ -17,11 +17,24 @@
 
 <div class="container" style="max-width: 800px; margin: 0 auto; padding: 0 1rem 3rem;">
     <form method="post" action="/events/create">
-        <!-- Section 01: 基本資訊 -->
         <div class="form-section animate-fade-in stagger-1">
             <div class="form-section-header">
                 <span class="section-number">01</span>
-                <h3 class="section-title">基本資訊</h3>
+                <h3 class="section-title">活動資訊</h3>
+            </div>
+
+            <div class="form-field">
+                <label class="field-label required" for="issuer_id">所屬頻道</label>
+                <select class="field-select" name="issuer_id" id="issuer_id" required>
+                    <option value="">請選擇頻道...</option>
+                    {% for issuer in issuers %}
+                    <option value="{{ issuer.id }}">{{ issuer.channel_name }}</option>
+                    {% endfor %}
+                </select>
+                <span class="field-hint">
+                    <i class="bi bi-info-circle"></i>
+                    選擇此活動對應的頻道發行者
+                </span>
             </div>
 
             <div class="form-field">
@@ -41,71 +54,17 @@
             </div>
 
             <div class="form-field">
-                <label class="field-label required" for="issuer_id">所屬頻道</label>
-                <select class="field-select" name="issuer_id" id="issuer_id" required>
-                    <option value="">請選擇頻道...</option>
-                    {% for issuer in issuers %}
-                    <option value="{{ issuer.id }}">{{ issuer.channel_name }}</option>
-                    {% endfor %}
-                </select>
+                <label class="field-label required" for="event_date">活動日期</label>
+                <input
+                    class="field-input"
+                    type="date"
+                    name="event_date"
+                    id="event_date"
+                    required
+                >
                 <span class="field-hint">
-                    <i class="bi bi-info-circle"></i>
-                    選擇此活動對應的頻道發行者
-                </span>
-            </div>
-        </div>
-
-        <!-- Section 02: 活動詳情 -->
-        <div class="form-section animate-fade-in stagger-2">
-            <div class="form-section-header">
-                <span class="section-number">02</span>
-                <h3 class="section-title">活動詳情</h3>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-                <div class="form-field">
-                    <label class="field-label required" for="event_date">活動日期</label>
-                    <input
-                        class="field-input"
-                        type="date"
-                        name="event_date"
-                        id="event_date"
-                        required
-                    >
-                    <span class="field-hint">
-                        <i class="bi bi-calendar3"></i>
-                        活動舉辦日期
-                    </span>
-                </div>
-
-                <div class="form-field">
-                    <label class="field-label" for="event_location">活動地點</label>
-                    <input
-                        class="field-input"
-                        type="text"
-                        name="event_location"
-                        id="event_location"
-                        placeholder="例如：台北國際會議中心 或 線上"
-                    >
-                    <span class="field-hint">
-                        <i class="bi bi-geo-alt"></i>
-                        實體或線上活動地點（選填）
-                    </span>
-                </div>
-            </div>
-
-            <div class="form-field">
-                <label class="field-label" for="event_description">活動描述</label>
-                <textarea
-                    class="field-textarea"
-                    name="event_description"
-                    id="event_description"
-                    rows="5"
-                    placeholder="簡單描述這個活動的內容、目的或特別事項..."
-                ></textarea>
-                <span class="field-hint">
-                    <i class="bi bi-pencil"></i>
-                    活動的詳細說明（選填）
+                    <i class="bi bi-calendar3"></i>
+                    活動舉辦日期
                 </span>
             </div>
         </div>
@@ -153,5 +112,6 @@
     font-size: 0.875rem;
     color: var(--color-cyan);
 }
+
 </style>
 {% endblock %}
