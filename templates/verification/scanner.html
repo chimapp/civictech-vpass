@@ -1,145 +1,587 @@
 {% extends "base.html" %}
 
-{% block title %}驗證 - {{ event.event_name }}{% endblock %}
+{% block title %}掃描驗證 - {{ event.event_name }}{% endblock %}
 
-{% block container_class %}container-xl{% endblock %}
+{% block container_class %}{% endblock %}
 
 {% block content %}
-<div class="page-header animate-fade-in">
-    <nav class="breadcrumb-nav">
-        <a href="/verify" class="breadcrumb-link">← 返回活動</a>
-    </nav>
-    <div class="page-header-content">
-        <div class="page-header-text">
-            <h1 class="page-title">{{ event.event_name }}</h1>
-            <p class="page-subtitle">{{ issuer.channel_name }}</p>
-        </div>
-    </div>
-</div>
-
-<div style="display: grid; grid-template-columns: 360px 1fr; gap: 2rem; margin-top: 2rem;">
-    <!-- Left Sidebar: Instructions -->
-    <div class="animate-fade-in stagger-1" style="display: flex; flex-direction: column; gap: 1.5rem;">
-        <div style="background: white; border: 1px solid var(--color-mist); border-radius: 12px; padding: 1.5rem;">
-            <h2 style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; color: var(--color-ink); margin-bottom: 1.25rem; letter-spacing: -0.02em;">驗證步驟</h2>
-
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div style="display: flex; gap: 1rem;">
-                    <div class="section-number" style="width: 36px; height: 36px; font-size: 1rem; flex-shrink: 0;">01</div>
-                    <p style="color: var(--color-slate); font-size: 0.9375rem; line-height: 1.6; margin: 0;">
-                        在手機上開啟數位皮夾應用程式
-                    </p>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <div class="section-number" style="width: 36px; height: 36px; font-size: 1rem; flex-shrink: 0;">02</div>
-                    <p style="color: var(--color-slate); font-size: 0.9375rem; line-height: 1.6; margin: 0;">
-                        向參與者展示右側的 QR Code
-                    </p>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <div class="section-number" style="width: 36px; height: 36px; font-size: 1rem; flex-shrink: 0;">03</div>
-                    <p style="color: var(--color-slate); font-size: 0.9375rem; line-height: 1.6; margin: 0;">
-                        請他們使用數位皮夾應用程式掃描
-                    </p>
-                </div>
-                <div style="display: flex; gap: 1rem;">
-                    <div class="section-number" style="width: 36px; height: 36px; font-size: 1rem; flex-shrink: 0;">04</div>
-                    <p style="color: var(--color-slate); font-size: 0.9375rem; line-height: 1.6; margin: 0;">
-                        等待驗證結果出現
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <a href="/verify/{{ event.id }}/history" class="btn btn-ghost" style="width: 100%; justify-content: center;">
-            <i class="bi bi-clock-history"></i>
-            <span>查看驗證歷史記錄</span>
-        </a>
-    </div>
-
-    <!-- Right Panel: QR Viewer & Results -->
-    <div class="animate-fade-in stagger-2">
-        <!-- QR Code Section -->
-        <div id="qr-container" style="background: white; border: 2px solid var(--color-mist); border-radius: 16px; padding: 3rem; margin-bottom: 2rem;">
-            <div id="loading" class="text-center" style="padding: 3rem 0;">
-                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p style="color: var(--color-slate); font-weight: 600; font-size: 1.125rem; margin: 0;">產生 QR Code 中...</p>
-            </div>
-
-            <div id="qr-display" class="text-center" hidden>
-                <div class="qr-viewer" style="margin: 0 auto;">
-                    <img id="qr-image" class="qr-code-image" alt="驗證 QR Code">
-                </div>
-                <div class="qr-countdown" style="margin-top: 2rem;">
-                    <div style="font-size: 0.875rem; color: var(--color-slate); margin-bottom: 0.5rem;">到期時間</div>
-                    <div id="countdown" style="font-family: var(--font-display); font-size: 2.5rem; font-weight: 800; color: var(--color-ink);">5:00</div>
-                </div>
-                <button id="refresh-btn" type="button" class="btn btn-primary btn-lg" style="margin-top: 2rem;" hidden onclick="requestNewQR()">
-                    <i class="bi bi-arrow-clockwise"></i>
-                    <span>產生新的 QR Code</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Result Section -->
-        <div id="result-container">
-            <div id="pending-status" class="verification-result" style="background: rgba(0, 217, 255, 0.06); border: 2px solid rgba(0, 217, 255, 0.2);" hidden>
-                <div class="result-icon" style="color: var(--color-cyan); animation: pulse-status 2s ease-in-out infinite;">
-                    <i class="bi bi-qr-code-scan"></i>
-                </div>
-                <h3 class="result-title" style="color: var(--color-cyan);">等待掃描中...</h3>
-                <p class="result-message">請參與者掃描上方 QR Code</p>
-            </div>
-
-            <div id="success-result" class="verification-result result-success" hidden>
-                <div class="result-icon">
-                    <i class="bi bi-check-circle-fill"></i>
-                </div>
-                <h3 class="result-title">驗證成功</h3>
-                <div id="member-info" class="member-info"></div>
-                <button type="button" class="btn btn-primary btn-lg" onclick="requestNewQR()">
-                    <i class="bi bi-arrow-right-circle-fill"></i>
-                    <span>驗證下一位</span>
-                </button>
-            </div>
-
-            <div id="failed-result" class="verification-result result-error" hidden>
-                <div class="result-icon">
-                    <i class="bi bi-x-circle-fill"></i>
-                </div>
-                <h3 class="result-title">驗證失敗</h3>
-                <p id="error-message" class="result-message"></p>
-                <button type="button" class="btn btn-secondary btn-lg" onclick="requestNewQR()">
-                    <i class="bi bi-arrow-clockwise"></i>
-                    <span>再試一次</span>
-                </button>
-            </div>
-
-            <div id="expired-result" class="verification-result" style="background: rgba(245, 158, 11, 0.08); border: 2px solid rgba(245, 158, 11, 0.3);" hidden>
-                <div class="result-icon" style="color: #f59e0b;">
-                    <i class="bi bi-clock-history"></i>
-                </div>
-                <h3 class="result-title" style="color: #f59e0b;">QR Code 已過期</h3>
-                <p class="result-message">為了安全，QR Code 會在 5 分鐘後過期</p>
-                <button type="button" class="btn btn-accent btn-lg" onclick="requestNewQR()">
-                    <i class="bi bi-arrow-clockwise"></i>
-                    <span>產生新的 QR Code</span>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Responsive Layout for Mobile -->
 <style>
-@media (max-width: 1200px) {
-    div[style*="grid-template-columns: 360px 1fr"] {
-        grid-template-columns: 1fr !important;
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --scanner-primary: #0EA5E9;
+    --scanner-success: #10B981;
+    --scanner-error: #EF4444;
+    --scanner-warning: #F59E0B;
+    --scanner-bg: #F8FAFC;
+    --scanner-card: #FFFFFF;
+    --scanner-text: #0F172A;
+    --scanner-text-muted: #64748B;
+    --scanner-border: #E2E8F0;
+}
+
+/* Hide the navigation header */
+.app-header {
+    display: none !important;
+}
+
+main {
+    padding: 0 !important;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--scanner-bg);
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--scanner-text);
+}
+
+.scanner-container {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* Header */
+.scanner-header {
+    padding: 1.25rem 1.5rem;
+    background: var(--scanner-card);
+    border-bottom: 2px solid var(--scanner-border);
+    position: relative;
+    z-index: 10;
+}
+
+.scanner-header-top {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.back-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 2px solid var(--scanner-border);
+    background: transparent;
+    color: var(--scanner-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.back-button:hover {
+    background: var(--scanner-bg);
+    border-color: var(--scanner-primary);
+    color: var(--scanner-primary);
+}
+
+.event-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--scanner-text);
+    line-height: 1.2;
+    flex: 1;
+}
+
+.channel-name {
+    font-size: 0.875rem;
+    color: var(--scanner-text-muted);
+    font-weight: 500;
+    padding-left: 3rem;
+}
+
+/* Main Content */
+.scanner-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1.5rem 2rem;
+    position: relative;
+}
+
+/* QR Code Container */
+.qr-wrapper {
+    position: relative;
+    max-width: 100%;
+    width: 100%;
+    max-width: 400px;
+    animation: fadeScaleIn 0.5s ease-out;
+}
+
+.qr-card {
+    background: var(--scanner-card);
+    border-radius: 24px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08),
+                0 0 0 2px var(--scanner-border);
+    position: relative;
+    overflow: hidden;
+}
+
+.qr-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--scanner-primary), #38BDF8);
+}
+
+.qr-display {
+    aspect-ratio: 1;
+    width: 100%;
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--scanner-card);
+}
+
+.qr-image {
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+}
+
+/* Countdown */
+.countdown-display {
+    margin-top: 1.25rem;
+    text-align: center;
+}
+
+.countdown-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--scanner-text-muted);
+    font-weight: 700;
+    margin-bottom: 0.375rem;
+}
+
+.countdown-time {
+    font-family: 'Space Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--scanner-primary);
+    letter-spacing: 0.05em;
+    transition: color 0.3s;
+}
+
+.countdown-time.warning {
+    color: var(--scanner-error);
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* Loading State */
+.loading-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 1.5rem;
+    border: 4px solid var(--scanner-border);
+    border-top-color: var(--scanner-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-text {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--scanner-text);
+}
+
+/* Bottom Sheet */
+.bottom-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.bottom-sheet-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--scanner-card);
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+    z-index: 101;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.bottom-sheet.active {
+    transform: translateY(0);
+}
+
+.bottom-sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--scanner-border);
+    border-radius: 2px;
+    margin: 1rem auto;
+}
+
+.bottom-sheet-content {
+    padding: 1rem 1.5rem 2rem;
+}
+
+/* Result Styles */
+.result-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    animation: iconPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.result-icon.success {
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: white;
+}
+
+.result-icon.error {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    color: white;
+}
+
+.result-icon.expired {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white;
+}
+
+@keyframes iconPop {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.result-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.result-title.success {
+    color: var(--scanner-success);
+}
+
+.result-title.error {
+    color: var(--scanner-error);
+}
+
+.result-title.expired {
+    color: var(--scanner-warning);
+}
+
+.result-message {
+    text-align: center;
+    color: var(--scanner-text-muted);
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+/* Member Info */
+.member-info {
+    background: var(--scanner-bg);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.member-info-item {
+    margin-bottom: 1rem;
+}
+
+.member-info-item:last-child {
+    margin-bottom: 0;
+}
+
+.member-info-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: var(--scanner-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.member-info-value {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--scanner-text);
+}
+
+/* Buttons */
+.action-button {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border-radius: 14px;
+    border: none;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    margin-top: 0.75rem;
+}
+
+.action-button:first-of-type {
+    margin-top: 0;
+}
+
+.action-button.primary {
+    background: linear-gradient(135deg, var(--scanner-primary), #0284C7);
+    color: white;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.action-button.primary:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+.action-button.secondary {
+    background: var(--scanner-bg);
+    color: var(--scanner-text);
+    border: 2px solid var(--scanner-border);
+}
+
+.action-button.secondary:active {
+    background: var(--scanner-border);
+}
+
+.action-button.success {
+    background: linear-gradient(135deg, var(--scanner-success), #059669);
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.action-button.success:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
     }
 }
+
+@keyframes fadeSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+    .scanner-main {
+        padding: 3rem 2rem;
+    }
+
+    .qr-wrapper {
+        max-width: 450px;
+    }
+
+    .bottom-sheet {
+        left: 50%;
+        transform: translateX(-50%) translateY(100%);
+        max-width: 500px;
+        border-radius: 24px;
+    }
+
+    .bottom-sheet.active {
+        transform: translateX(-50%) translateY(0);
+        bottom: 2rem;
+    }
+}
+
+@media (max-height: 750px) {
+    .scanner-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .scanner-main {
+        padding: 1rem 1.5rem 1.5rem;
+    }
+
+    .qr-card {
+        padding: 1.25rem;
+    }
+
+    .countdown-display {
+        margin-top: 1rem;
+    }
+
+    .countdown-time {
+        font-size: 1.75rem;
+    }
+
+    .qr-wrapper {
+        max-width: 350px;
+    }
+}
+
+.hidden {
+    display: none !important;
+}
 </style>
+
+<div class="scanner-container">
+    <!-- Header -->
+    <header class="scanner-header">
+        <div class="scanner-header-top">
+            <a href="/verify" class="back-button">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1 class="event-title">{{ event.event_name }}</h1>
+        </div>
+        <div class="channel-name">{{ issuer.channel_name }}</div>
+    </header>
+
+    <!-- Main Scanner Area -->
+    <main class="scanner-main">
+        <!-- Loading State -->
+        <div id="loading" class="loading-state">
+            <div class="spinner"></div>
+            <p class="loading-text">產生 QR Code 中...</p>
+        </div>
+
+        <!-- QR Display -->
+        <div id="qr-container" class="hidden">
+            <div class="qr-wrapper">
+                <div class="qr-card">
+                    <div class="qr-display">
+                        <img id="qr-image" class="qr-image" alt="驗證 QR Code">
+                    </div>
+                    <div class="countdown-display">
+                        <div class="countdown-label">有效時間</div>
+                        <div id="countdown" class="countdown-time">5:00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Bottom Sheet Backdrop -->
+<div id="backdrop" class="bottom-sheet-backdrop" onclick="closeBottomSheet()"></div>
+
+<!-- Bottom Sheet -->
+<div id="bottom-sheet" class="bottom-sheet">
+    <div class="bottom-sheet-handle"></div>
+    <div class="bottom-sheet-content">
+        <!-- Success Result -->
+        <div id="success-result" class="hidden">
+            <div class="result-icon success">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <h2 class="result-title success">驗證成功</h2>
+            <div id="member-info" class="member-info"></div>
+            <button class="action-button success" onclick="nextScan()">
+                <i class="bi bi-arrow-right-circle-fill"></i>
+                <span>驗證下一位</span>
+            </button>
+        </div>
+
+        <!-- Failed Result -->
+        <div id="failed-result" class="hidden">
+            <div class="result-icon error">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+            <h2 class="result-title error">驗證失敗</h2>
+            <p id="error-message" class="result-message"></p>
+            <button class="action-button primary" onclick="nextScan()">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>再試一次</span>
+            </button>
+        </div>
+
+        <!-- Expired Result -->
+        <div id="expired-result" class="hidden">
+            <div class="result-icon expired">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <h2 class="result-title expired">QR Code 已過期</h2>
+            <p class="result-message">為了安全，QR Code 會在 5 分鐘後過期</p>
+            <button class="action-button primary" onclick="nextScan()">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>產生新的 QR Code</span>
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
 const eventId = "{{ event.id }}";
@@ -148,21 +590,36 @@ let pollInterval = null;
 let expiresAt = null;
 let countdownInterval = null;
 
+// Utility functions
 function showElement(id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.hidden = false;
-    }
+    document.getElementById(id)?.classList.remove('hidden');
 }
 
 function hideElement(id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.hidden = true;
-    }
+    document.getElementById(id)?.classList.add('hidden');
 }
 
-// Initialize: Request QR code on page load
+function openBottomSheet() {
+    document.getElementById('backdrop').classList.add('active');
+    document.getElementById('bottom-sheet').classList.add('active');
+}
+
+function closeBottomSheet() {
+    document.getElementById('backdrop').classList.remove('active');
+    document.getElementById('bottom-sheet').classList.remove('active');
+}
+
+function nextScan() {
+    closeBottomSheet();
+    setTimeout(() => {
+        hideElement('success-result');
+        hideElement('failed-result');
+        hideElement('expired-result');
+        requestNewQR();
+    }, 300);
+}
+
+// Initialize on page load
 window.onload = function() {
     requestNewQR();
 };
@@ -174,12 +631,7 @@ async function requestNewQR() {
 
     // Reset UI
     showElement('loading');
-    hideElement('qr-display');
-    hideElement('pending-status');
-    hideElement('success-result');
-    hideElement('failed-result');
-    hideElement('expired-result');
-    hideElement('refresh-btn');
+    hideElement('qr-container');
 
     try {
         const response = await fetch(`/verify/${eventId}/request-qr`, {
@@ -200,8 +652,7 @@ async function requestNewQR() {
         // Display QR code
         document.getElementById('qr-image').src = `data:image/png;base64,${data.qrcode_image}`;
         hideElement('loading');
-        showElement('qr-display');
-        showElement('pending-status');
+        showElement('qr-container');
 
         // Start countdown timer
         startCountdown();
@@ -211,15 +662,13 @@ async function requestNewQR() {
 
     } catch (error) {
         console.error('Failed to request QR code:', error);
-        const loading = document.getElementById('loading');
-        loading.innerHTML = `
-            <div style="padding: 3rem 0;">
-                <div style="font-size: 3rem; color: var(--color-coral); margin-bottom: 1rem;">
+        document.getElementById('loading').innerHTML = `
+            <div style="text-align: center;">
+                <div style="font-size: 3rem; color: var(--scanner-error); margin-bottom: 1rem;">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                 </div>
-                <p style="color: var(--color-ink); font-weight: 600; font-size: 1.125rem; margin-bottom: 0.5rem;">無法產生 QR Code</p>
-                <p style="color: var(--color-slate); font-size: 0.9375rem; margin-bottom: 2rem;">${error.message}</p>
-                <button type="button" class="btn btn-secondary" onclick="requestNewQR()">
+                <p class="loading-text" style="margin-bottom: 1.5rem;">無法產生 QR Code</p>
+                <button class="action-button secondary" onclick="requestNewQR()" style="max-width: 200px; margin: 0 auto;">
                     <i class="bi bi-arrow-clockwise"></i>
                     <span>重試</span>
                 </button>
@@ -242,18 +691,18 @@ function updateCountdown() {
     if (countdownEl) {
         countdownEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-        // Change color when less than 30 seconds
+        // Add warning class when less than 30 seconds
         if (remaining < 30000) {
-            countdownEl.style.color = 'var(--color-coral)';
+            countdownEl.classList.add('warning');
         } else {
-            countdownEl.style.color = 'var(--color-ink)';
+            countdownEl.classList.remove('warning');
         }
     }
 
     if (remaining <= 0) {
         clearInterval(countdownInterval);
         clearInterval(pollInterval);
-        showElement('refresh-btn');
+        showExpired();
     }
 }
 
@@ -287,49 +736,52 @@ async function checkResult() {
 }
 
 function displayResult(result) {
-    hideElement('pending-status');
-    hideElement('qr-display');
+    hideElement('qr-container');
 
     if (result.verify_result === true) {
         // Success
-        showElement('success-result');
+        hideElement('failed-result');
+        hideElement('expired-result');
 
         // Display member info if available
         if (result.member_info) {
             const memberInfoDiv = document.getElementById('member-info');
             memberInfoDiv.innerHTML = '';
 
-            const dl = document.createElement('dl');
-            dl.style.cssText = 'display: grid; gap: 0.75rem; text-align: left; margin: 0;';
-
             for (const [key, value] of Object.entries(result.member_info)) {
                 if (key !== 'credentialType') {
-                    const div = document.createElement('div');
-                    const dt = document.createElement('dt');
-                    dt.style.cssText = 'font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-cyan); margin-bottom: 0.25rem;';
-                    dt.textContent = key;
-                    const dd = document.createElement('dd');
-                    dd.style.cssText = 'font-size: 1rem; color: var(--color-ink); font-weight: 500; margin: 0;';
-                    dd.textContent = value;
-                    div.appendChild(dt);
-                    div.appendChild(dd);
-                    dl.appendChild(div);
+                    const item = document.createElement('div');
+                    item.className = 'member-info-item';
+                    item.innerHTML = `
+                        <div class="member-info-label">${key}</div>
+                        <div class="member-info-value">${value}</div>
+                    `;
+                    memberInfoDiv.appendChild(item);
                 }
             }
-            memberInfoDiv.appendChild(dl);
         }
+
+        showElement('success-result');
     } else {
         // Failed
-        showElement('failed-result');
+        hideElement('success-result');
+        hideElement('expired-result');
+
         document.getElementById('error-message').textContent =
             result.result_description || '驗證失敗';
+
+        showElement('failed-result');
     }
+
+    openBottomSheet();
 }
 
 function showExpired() {
-    hideElement('pending-status');
-    hideElement('qr-display');
+    hideElement('qr-container');
+    hideElement('success-result');
+    hideElement('failed-result');
     showElement('expired-result');
+    openBottomSheet();
 }
 </script>
 {% endblock %}
