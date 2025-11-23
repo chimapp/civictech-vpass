@@ -17,177 +17,114 @@
 
 <div class="container" style="max-width: 900px; margin: 0 auto; padding: 0 1rem 3rem;">
     <form action="/issuers" method="POST">
-        <!-- Section 00: 快速填寫 -->
-        <div class="form-section animate-fade-in stagger-1" style="background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(26, 31, 58, 0.05)); border-color: rgba(0, 217, 255, 0.3);">
-            <div class="form-section-header">
-                <span class="section-number" style="background: linear-gradient(135deg, var(--color-cyan), var(--color-amber));">✨</span>
-                <h3 class="section-title">從 YouTube 快速填寫</h3>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end;">
-                <div class="form-field" style="margin: 0;">
-                    <label class="field-label" for="channel_url">頻道網址</label>
-                    <input
-                        type="text"
-                        class="field-input"
-                        id="channel_url"
-                        placeholder="https://www.youtube.com/@Dokibird"
-                    >
-                    <span class="field-hint">
-                        <i class="bi bi-magic"></i>
-                        貼上 YouTube 頻道網址，我們會自動填寫頻道資訊
-                    </span>
-                </div>
-                <button type="button" id="autofill-btn" class="btn btn-primary" style="height: fit-content; padding: 0.875rem 1.5rem;">
-                    <i class="bi bi-lightning-fill"></i>
-                    自動填寫
-                </button>
-            </div>
-
-            <div id="error-message" class="d-none" style="margin-top: 1rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-size: 0.9375rem;">
-            </div>
-        </div>
-
-        <!-- Section 01: 基本資訊 -->
+        <!-- 單一區塊：發行者資訊 -->
         <div class="form-section animate-fade-in stagger-2">
             <div class="form-section-header">
                 <span class="section-number">01</span>
-                <h3 class="section-title">基本資訊</h3>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-                <div class="form-field">
-                    <label class="field-label required" for="youtube_channel_id">YouTube Channel ID</label>
-                    <input
-                        type="text"
-                        class="field-input"
-                        name="youtube_channel_id"
-                        id="youtube_channel_id"
-                        required
-                        placeholder="UCxxxxxxxxxxxxxxxxxxx"
-                    >
-                    <span class="field-hint">
-                        <i class="bi bi-key"></i>
-                        YouTube 頻道的唯一識別碼
-                    </span>
-                </div>
-
-                <div class="form-field">
-                    <label class="field-label required" for="channel_name">頻道名稱</label>
-                    <input
-                        type="text"
-                        class="field-input"
-                        name="channel_name"
-                        id="channel_name"
-                        required
-                        placeholder="我的頻道"
-                    >
-                    <span class="field-hint">
-                        <i class="bi bi-youtube"></i>
-                        將顯示在會員卡片上的頻道名稱
-                    </span>
-                </div>
-            </div>
-
-            <div class="form-field">
-                <label class="field-label" for="channel_handle">頻道代號</label>
-                <input
-                    type="text"
-                    class="field-input"
-                    name="channel_handle"
-                    id="channel_handle"
-                    placeholder="@mychannel"
-                >
-                <span class="field-hint">
-                    <i class="bi bi-at"></i>
-                    頻道的 @ 名稱（選填）
-                </span>
-            </div>
-        </div>
-
-        <!-- Section 02: 驗證設定 -->
-        <div class="form-section animate-fade-in stagger-3">
-            <div class="form-section-header">
-                <span class="section-number">02</span>
-                <h3 class="section-title">驗證設定</h3>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-                <div class="form-field">
-                    <label class="field-label required" for="verification_video_id">驗證影片 ID</label>
-                    <input
-                        type="text"
-                        class="field-input"
-                        name="verification_video_id"
-                        id="verification_video_id"
-                        required
-                        placeholder="dQw4w9WgXcQ"
-                    >
-                    <span class="field-hint">
-                        <i class="bi bi-film"></i>
-                        會員將在此影片發布驗證留言
-                    </span>
-                </div>
-
-                <div class="form-field">
-                    <label class="field-label required" for="default_membership_label">預設會員標籤</label>
-                    <input
-                        type="text"
-                        class="field-input"
-                        name="default_membership_label"
-                        id="default_membership_label"
-                        required
-                        value="會員"
-                        placeholder="會員"
-                    >
-                    <span class="field-hint">
-                        <i class="bi bi-tag"></i>
-                        在卡片上顯示的標籤（例如：「會員」、「訂閱者」）
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Section 03: 進階設定 -->
-        <div class="form-section animate-fade-in stagger-4">
-            <div class="form-section-header">
-                <span class="section-number">03</span>
-                <h3 class="section-title">進階設定</h3>
-            </div>
-
-            <div class="form-field">
-                <label class="field-label" for="vc_uid">Taiwan Digital Wallet VC UID</label>
-                <input
-                    type="text"
-                    class="field-input"
-                    name="vc_uid"
-                    id="vc_uid"
-                    placeholder="例如：0019930579_hoshiyomi"
-                >
-                <span class="field-hint">
-                    <i class="bi bi-wallet2"></i>
-                    用於 Taiwan Digital Wallet QR code 產生的 VC UID（選填）
-                </span>
-            </div>
-        </div>
-
-        <!-- Info Box -->
-        <div class="form-section animate-fade-in stagger-5" style="background: rgba(251, 191, 36, 0.05); border-color: rgba(251, 191, 36, 0.3);">
-            <div style="display: flex; align-items: start; gap: 1rem;">
-                <i class="bi bi-info-circle-fill" style="font-size: 1.5rem; color: var(--color-amber); flex-shrink: 0;"></i>
                 <div>
-                    <h4 style="font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; color: var(--color-ink); margin-bottom: 0.5rem;">
-                        準備好建立發行者了嗎？
-                    </h4>
-                    <p style="font-size: 0.9375rem; color: var(--color-slate); line-height: 1.6; margin: 0;">
-                        建立發行者後，您就可以開始為頻道會員發行數位卡片。確保所有資訊正確，特別是 Channel ID 和驗證影片 ID。
-                    </p>
+                    <h3 class="section-title">發行者資訊</h3>
+                    <p style="margin: 0; color: var(--color-slate); font-size: 0.95rem;">頻道資訊由 YouTube
+                        連結填入，驗證影片貼網址即可自動擷取 ID</p>
                 </div>
             </div>
+
+            <!-- 頻道網址與預覽 -->
+            <div class="subsection" style="border-top: none; padding-top: 0; margin-top: 0;">
+                <div class="subsection-header">
+                    <h4 class="subsection-title">頻道資訊</h4>
+                    <span class="pill">由網址擷取</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end;">
+                    <div class="form-field" style="margin: 0;">
+                        <label class="field-label" for="channel_url">頻道網址</label>
+                        <input type="text" class="field-input" id="channel_url"
+                            placeholder="https://www.youtube.com/@Dokibird">
+                    </div>
+                    <button type="button" id="autofill-btn" class="btn btn-primary"
+                        style="height: fit-content; padding: 0.875rem 1.5rem;">
+                        <i class="bi bi-lightning-fill"></i>
+                        取得頻道資訊
+                    </button>
+                </div>
+                <span class="field-hint">
+                    <i class="bi bi-magic"></i>
+                    貼上 YouTube 頻道網址，我們會自動填寫頻道資訊
+                </span>
+
+                <div id="error-message" class="d-none"
+                    style="margin-top: 1rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-size: 0.9375rem;">
+                </div>
+
+                <div id="channel-preview" class="channel-preview d-none">
+                    <div class="preview-title">
+                        <i class="bi bi-broadcast-pin"></i>
+                        <span>已擷取頻道資訊</span>
+                    </div>
+                    <div class="preview-grid">
+                        <div class="preview-item">
+                            <div class="preview-label">頻道名稱</div>
+                            <div class="preview-value" id="preview-channel-name">—</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">頻道代號</div>
+                            <div class="preview-value" id="preview-channel-handle">—</div>
+                        </div>
+                        <div class="preview-item">
+                            <div class="preview-label">Channel ID</div>
+                            <div class="preview-value" id="preview-channel-id">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 隱藏的頻道資訊欄位，值由自動填寫提供 -->
+            <input type="hidden" name="youtube_channel_id" id="youtube_channel_id" required>
+            <input type="hidden" name="channel_name" id="channel_name" required>
+            <input type="hidden" name="channel_handle" id="channel_handle">
+
+            <!-- 驗證設定 -->
+            <div class="subsection">
+                <div class="subsection-header">
+                    <h4 class="subsection-title">驗證設定</h4>
+                    <span class="pill pill-ghost">貼網址即可</span>
+                </div>
+
+                <div class="form-field">
+                    <label class="field-label required" for="verification_video_url">驗證影片網址</label>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 0.75rem; align-items: center;">
+                        <input type="text" class="field-input" id="verification_video_url" required
+                            placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                        <div class="pill pill-ghost" id="extracted-video-id" aria-live="polite">ID：—</div>
+                    </div>
+                    <input type="hidden" name="verification_video_id" id="verification_video_id" required>
+                    <div id="verification-error" class="field-hint d-none" style="color: #ef4444;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 必填憑證 -->
+            <div class="subsection">
+                <div class="subsection-header">
+                    <h4 class="subsection-title">錢包憑證</h4>
+                    <span class="pill">必填</span>
+                </div>
+                <div class="form-field">
+                    <label class="field-label" for="vc_uid">VC 模板 UID</label>
+                    <input type="text" class="field-input" name="vc_uid" id="vc_uid"
+                        placeholder="例如：0019930579_hoshiyomi">
+                    <span class="field-hint">
+                        <i class="bi bi-wallet2"></i>
+                        請到<a href="https://issuer-sandbox.wallet.gov.tw/" target="_blank">發行端沙盒系統</a>建立 VC 模板
+                    </span>
+                </div>
+            </div>
+
+            <input type="hidden" name="default_membership_label" value="會員">
         </div>
 
         <!-- Submit Actions -->
-        <div class="animate-fade-in stagger-6" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+        <div class="animate-fade-in stagger-6"
+            style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
             <a href="/issuers" class="btn btn-ghost">
                 <i class="bi bi-x-circle"></i>
                 取消
@@ -201,74 +138,247 @@
 </div>
 
 <style>
-.field-hint {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.8125rem;
-    color: var(--color-slate);
-    margin-top: 0.5rem;
-}
+    .field-hint {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.8125rem;
+        color: var(--color-slate);
+        margin-top: 0.5rem;
+    }
 
-.field-hint i {
-    font-size: 0.875rem;
-    color: var(--color-cyan);
-}
+    .field-hint i {
+        font-size: 0.875rem;
+        color: var(--color-cyan);
+    }
+
+    .subsection {
+        border-top: 1px solid rgba(26, 31, 58, 0.08);
+        padding-top: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .subsection-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .subsection-title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--color-ink);
+    }
+
+    .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 999px;
+        background: rgba(0, 217, 255, 0.12);
+        color: var(--color-ink);
+        font-size: 0.8125rem;
+        border: 1px solid rgba(0, 217, 255, 0.25);
+        white-space: nowrap;
+    }
+
+    .pill-ghost {
+        background: rgba(26, 31, 58, 0.03);
+        border-color: rgba(26, 31, 58, 0.08);
+        color: var(--color-slate);
+    }
+
+    .channel-preview {
+        margin-top: 1rem;
+        padding: 1rem;
+        border: 1px dashed rgba(0, 217, 255, 0.35);
+        border-radius: 12px;
+        background: rgba(0, 217, 255, 0.04);
+    }
+
+    .preview-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+        color: var(--color-ink);
+        margin-bottom: 0.5rem;
+    }
+
+    .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .preview-item {
+        padding: 0.75rem;
+        border-radius: 10px;
+        background: rgba(26, 31, 58, 0.03);
+        border: 1px solid rgba(26, 31, 58, 0.06);
+    }
+
+    .preview-label {
+        font-size: 0.8rem;
+        color: var(--color-slate);
+        margin-bottom: 0.25rem;
+    }
+
+    .preview-value {
+        font-weight: 700;
+        color: var(--color-ink);
+        word-break: break-all;
+    }
 </style>
 
 <script>
-document.getElementById('autofill-btn').addEventListener('click', async function() {
-    const urlInput = document.getElementById('channel_url');
-    const url = urlInput.value.trim();
-    const errorDiv = document.getElementById('error-message');
-    const btn = this;
+    document.getElementById('autofill-btn').addEventListener('click', async function () {
+        const urlInput = document.getElementById('channel_url');
+        const url = urlInput.value.trim();
+        const errorDiv = document.getElementById('error-message');
+        const btn = this;
 
-    if (!url) {
-        errorDiv.textContent = '請輸入 YouTube 頻道網址';
-        errorDiv.classList.remove('d-none');
-        return;
-    }
-
-    errorDiv.classList.add('d-none');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 載入中...';
-
-    try {
-        const response = await fetch(`/issuers/autofill?url=${encodeURIComponent(url)}`);
-
-        if (!response.ok) {
-            const text = await response.text();
-            throw new Error(text || '無法取得頻道資訊');
+        if (!url) {
+            errorDiv.textContent = '請輸入 YouTube 頻道網址';
+            errorDiv.classList.remove('d-none');
+            return;
         }
 
-        const data = await response.json();
+        errorDiv.classList.add('d-none');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 載入中...';
 
-        document.getElementById('youtube_channel_id').value = data.channel_id;
-        document.getElementById('channel_name').value = data.channel_name;
-        document.getElementById('channel_handle').value = data.channel_handle;
-        urlInput.value = '';
+        try {
+            const response = await fetch(`/issuers/autofill?url=${encodeURIComponent(url)}`);
 
-        // Success feedback
-        const successDiv = document.createElement('div');
-        successDiv.style.cssText = 'margin-top: 1rem; padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 2px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: #10b981; font-size: 0.9375rem;';
-        successDiv.innerHTML = '<i class="bi bi-check-circle-fill"></i> 頻道資訊已自動填入！';
-        errorDiv.parentElement.insertBefore(successDiv, errorDiv.nextSibling);
-        setTimeout(() => successDiv.remove(), 3000);
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || '無法取得頻道資訊');
+            }
 
-    } catch (error) {
-        errorDiv.textContent = error.message;
-        errorDiv.classList.remove('d-none');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-lightning-fill"></i> 自動填寫';
+            const data = await response.json();
+
+            document.getElementById('youtube_channel_id').value = data.channel_id;
+            document.getElementById('channel_name').value = data.channel_name;
+            document.getElementById('channel_handle').value = data.channel_handle;
+            urlInput.value = '';
+
+            // Show preview
+            document.getElementById('preview-channel-id').textContent = data.channel_id || '—';
+            document.getElementById('preview-channel-name').textContent = data.channel_name || '—';
+            document.getElementById('preview-channel-handle').textContent = data.channel_handle
+                ? `@${data.channel_handle.replace(/^@/, '')}`
+                : '—';
+            const preview = document.getElementById('channel-preview');
+            preview.classList.remove('d-none');
+
+            // Success feedback
+            const successDiv = document.createElement('div');
+            successDiv.style.cssText = 'margin-top: 1rem; padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 2px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: #10b981; font-size: 0.9375rem;';
+            successDiv.innerHTML = '<i class="bi bi-check-circle-fill"></i> 已取得頻道資訊！';
+            errorDiv.parentElement.insertBefore(successDiv, errorDiv.nextSibling);
+            setTimeout(() => successDiv.remove(), 3000);
+
+        } catch (error) {
+            errorDiv.textContent = error.message;
+            errorDiv.classList.remove('d-none');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-lightning-fill"></i> 自動填寫';
+        }
+    });
+
+    document.getElementById('channel_url').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('autofill-btn').click();
+        }
+    });
+
+    function extractYouTubeVideoId(input) {
+        const trimmed = input.trim();
+        if (!trimmed) return null;
+
+        const idPattern = /^[a-zA-Z0-9_-]{11}$/;
+        if (idPattern.test(trimmed)) {
+            return trimmed;
+        }
+
+        try {
+            const url = new URL(trimmed);
+            const host = url.hostname.replace(/^www\./, '');
+
+            if (host === 'youtu.be') {
+                const pathPart = url.pathname.split('/').filter(Boolean)[0];
+                if (pathPart && idPattern.test(pathPart)) return pathPart;
+            }
+
+            if (host.endsWith('youtube.com')) {
+                const searchId = url.searchParams.get('v');
+                if (searchId && idPattern.test(searchId)) return searchId;
+
+                const parts = url.pathname.split('/').filter(Boolean);
+                const shortsIndex = parts.indexOf('shorts');
+                if (shortsIndex !== -1 && idPattern.test(parts[shortsIndex + 1])) {
+                    return parts[shortsIndex + 1];
+                }
+
+                const embedIndex = parts.indexOf('embed');
+                if (embedIndex !== -1 && idPattern.test(parts[embedIndex + 1])) {
+                    return parts[embedIndex + 1];
+                }
+            }
+        } catch (e) {
+            return null;
+        }
+
+        return null;
     }
-});
 
-document.getElementById('channel_url').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('autofill-btn').click();
+    const verificationInput = document.getElementById('verification_video_url');
+    const extractedIdChip = document.getElementById('extracted-video-id');
+
+    function updateExtractedId() {
+        const videoId = extractYouTubeVideoId(verificationInput.value);
+        extractedIdChip.textContent = videoId ? `ID：${videoId}` : 'ID：—';
     }
-});
+
+    verificationInput.addEventListener('input', updateExtractedId);
+    verificationInput.addEventListener('blur', updateExtractedId);
+
+    document.querySelector('form[action="/issuers"]').addEventListener('submit', function (e) {
+        const hiddenIdInput = document.getElementById('verification_video_id');
+        const errorBox = document.getElementById('verification-error');
+        const channelIdInput = document.getElementById('youtube_channel_id');
+        const channelNameInput = document.getElementById('channel_name');
+
+        errorBox.classList.add('d-none');
+        errorBox.textContent = '';
+
+        const videoId = extractYouTubeVideoId(verificationInput.value);
+        if (!videoId) {
+            e.preventDefault();
+            errorBox.textContent = '請輸入有效的 YouTube 影片網址';
+            errorBox.classList.remove('d-none');
+            verificationInput.focus();
+            return;
+        }
+
+        if (!channelIdInput.value.trim() || !channelNameInput.value.trim()) {
+            e.preventDefault();
+            const fillError = document.getElementById('error-message');
+            fillError.textContent = '請先使用頻道網址自動填寫頻道資訊';
+            fillError.classList.remove('d-none');
+            document.getElementById('channel_url').focus();
+            return;
+        }
+
+        hiddenIdInput.value = videoId;
+        extractedIdChip.textContent = `ID：${videoId}`;
+    });
 </script>
 {% endblock %}
