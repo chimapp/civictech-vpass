@@ -161,27 +161,14 @@ async fn verify_single_card(
     };
 
     // 4. Check membership access
-    let video_id = match issuer.verification_method.as_str() {
-        "video" => issuer
-            .members_only_video_id
-            .as_ref()
-            .unwrap_or(&issuer.verification_video_id),
-        _ => &issuer.verification_video_id,
-    };
+    let video_id = issuer
+        .members_only_video_id
+        .as_ref()
+        .unwrap_or(&issuer.verification_video_id);
 
-    let is_still_member = match issuer.verification_method.as_str() {
-        "video" => membership_checker::check_video_access(&access_token, video_id)
-            .await
-            .map_err(|e| VerificationError::ApiError(e.to_string()))?,
-        "comment" => membership_checker::check_comment_access(&access_token, video_id)
-            .await
-            .map_err(|e| VerificationError::ApiError(e.to_string()))?,
-        _ => {
-            return Err(VerificationError::ApiError(
-                "Invalid verification method".to_string(),
-            ))
-        }
-    };
+    let is_still_member = membership_checker::check_video_access(&access_token, video_id)
+        .await
+        .map_err(|e| VerificationError::ApiError(e.to_string()))?;
 
     // 5. Update card based on result
     if is_still_member {

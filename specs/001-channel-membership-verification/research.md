@@ -24,7 +24,7 @@ Alternatives (Actix, Rocket, Warp) were rejected due to heavier abstractions or 
 ## Decision 2 — OAuth & HTTP Client
 
 - **Choice**: `oauth2` crate with Reqwest-backed HTTP client.
-- **Scope**: Google OAuth 2.0 (authorization code + PKCE) targeting YouTube read-only scopes for comment retrieval.
+- **Scope**: Google OAuth 2.0 (authorization code + PKCE) targeting YouTube read-only scopes for membership/video access.
 - **Implementation Notes**:
   - Scopes required: `https://www.googleapis.com/auth/youtube.readonly`.
   - Persist state + PKCE verifier server-side to mitigate CSRF and substitution attacks.
@@ -62,7 +62,7 @@ Diesel/SeaORM were rejected to avoid heavier abstractions and because raw SQL su
     "channel_name": "string",
     "membership_label": "string",
     "membership_confirmed_at": "ISO8601",
-    "verification_comment_id": "string",
+    "membership_verification_token": "string",
     "signature": "hex"
   }
   ```
@@ -89,7 +89,7 @@ No QR scanning or organizer UI is required in this slice, so frameworks like Rea
 
 ## Decision 6 — Observability & Operations
 
-- **Logging/Tracing**: Use `tracing` + `tracing-subscriber` with JSON log option for production. Annotate spans for OAuth callbacks, comment verification API calls, and database transactions.
+- **Logging/Tracing**: Use `tracing` + `tracing-subscriber` with JSON log option for production. Annotate spans for OAuth callbacks, membership verification API calls, and database transactions.
 - **Metrics**: Expose counters (claims attempted, claims succeeded, claims failed by reason) via a simple registry if needed; otherwise rely on logs.
 - **Health Check**: Provide `/health` endpoint verifying DB connectivity and application readiness.
 - **Secrets Management**: For development, environment variables (.env). For production, integrate with the platform’s secret manager (documented in deployment notes). Rotate AEAD keys with version identifiers stored in config and persisted alongside ciphertext.

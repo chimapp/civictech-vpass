@@ -7,15 +7,18 @@ use crate::models::{
     issuer::CardIssuer,
     member::{CreateMemberData, Member},
 };
-use crate::services::comment_verifier;
+use crate::services::membership_checker;
 
 #[derive(thiserror::Error, Debug)]
 pub enum CardIssuanceError {
     #[error("Database error: {0}")]
     DatabaseError(#[from] sqlx::Error),
 
-    #[error("Comment verification failed: {0}")]
-    CommentVerification(#[from] comment_verifier::CommentVerificationError),
+    #[error("Membership verification failed: {0}")]
+    MembershipVerificationFailed(String),
+
+    #[error("Membership check error: {0}")]
+    MembershipCheck(#[from] membership_checker::MembershipCheckError),
 
     #[error("Wallet QR generation failed: {0}")]
     WalletQrGeneration(#[from] crate::services::wallet_qr::WalletQrError),
@@ -28,9 +31,6 @@ pub enum CardIssuanceError {
 
     #[error("Active card already exists. {0}")]
     DuplicateCard(String),
-
-    #[error("Invalid comment ID format")]
-    InvalidCommentId,
 
     #[error("Issuer not configured for Taiwan Digital Wallet (missing vc_uid)")]
     MissingVcUid,
@@ -45,7 +45,6 @@ pub struct IssueCardRequest {
     pub member_youtube_user_id: String,
     pub member_display_name: String,
     pub member_avatar_url: Option<String>,
-    pub comment_link_or_id: String,
     pub session_started_at: DateTime<Utc>,
     pub access_token: String,
 }
@@ -58,14 +57,13 @@ pub struct IssueCardResult {
 
 /// Issues a new membership card
 ///
-/// This function orchestrates the entire card issuance flow:
-/// 1. Validates the issuer exists
-/// 2. Extracts comment ID from link
-/// 3. Verifies the comment on YouTube
-/// 4. Creates or updates member record
-/// 5. Stores the card in the database
-/// 6. Generates Taiwan Digital Wallet QR code
-/// 7. Returns the card with QR code
+/// Flow:
+/// 1. Validates issuer exists and wallet API health
+/// 2. Verifies membership by checking access to members-only video
+/// 3. Creates or updates member record
+/// 4. Stores the card in the database
+/// 5. Generates Taiwan Digital Wallet QR code
+/// 6. Returns the card with QR code
 #[tracing::instrument(skip(pool, issuer_api_config, request), fields(issuer_id = %request.issuer_id))]
 pub async fn issue_card(
     pool: &PgPool,
@@ -102,54 +100,35 @@ pub async fn issue_card(
         "Loaded issuer"
     );
 
-    // 2. Extract comment ID and video ID from link
-    let (comment_id, url_video_id) =
-        comment_verifier::extract_comment_and_video_id(&request.comment_link_or_id)
-            .ok_or(CardIssuanceError::InvalidCommentId)?;
+    // 2. Verify membership by checking access to the members-only video
+    let membership_video_id = issuer
+        .members_only_video_id
+        .as_deref()
+        .unwrap_or(&issuer.verification_video_id);
 
-    // If the URL contains a video ID, verify it matches the issuer's verification video
-    if let Some(ref vid) = url_video_id {
-        if vid != &issuer.verification_video_id {
-            tracing::warn!(
-                url_video_id = %vid,
-                expected_video_id = %issuer.verification_video_id,
-                "Video ID from URL doesn't match issuer's verification video"
-            );
-            return Err(CardIssuanceError::InvalidCommentId);
-        }
-    }
-
-    tracing::debug!(
-        comment_id = %comment_id,
-        video_id = ?url_video_id,
-        "Extracted comment and video ID from URL"
-    );
-
-    // 3. Verify the comment (no age restriction per FR-003)
     let youtube_start = Instant::now();
-    let verification_result = comment_verifier::verify_comment(
-        &comment_id,
-        &issuer.verification_video_id,
-        &request.member_youtube_user_id,
-        &request.access_token,
-    )
-    .await?;
+    let has_access =
+        membership_checker::check_video_access(&request.access_token, membership_video_id).await?;
     let youtube_duration = youtube_start.elapsed();
 
-    tracing::info!(
-        comment_id = %verification_result.comment_id,
-        author = %verification_result.author_display_name,
-        published_at = %verification_result.published_at,
-        youtube_api_duration_ms = youtube_duration.as_millis(),
-        "Comment verified successfully"
-    );
+    if !has_access {
+        tracing::warn!(
+            video_id = %membership_video_id,
+            "Membership check failed: user cannot access members-only video"
+        );
+        return Err(CardIssuanceError::MembershipVerificationFailed(
+            "Unable to confirm active membership for this channel".to_string(),
+        ));
+    }
+
+    let verified_at = Utc::now();
 
     // 4. Create or update member record
     let member = Member::find_or_create(
         pool,
         CreateMemberData {
             youtube_user_id: request.member_youtube_user_id.clone(),
-            default_display_name: verification_result.author_display_name.clone(),
+            default_display_name: request.member_display_name.clone(),
             avatar_url: request.member_avatar_url,
             locale: None,
         },
@@ -173,15 +152,9 @@ pub async fn issue_card(
     // 6. Create snapshot for auditing
     let now = Utc::now();
     let snapshot = serde_json::json!({
-        "comment": {
-            "id": verification_result.comment_id,
-            "text": verification_result.text,
-            "published_at": verification_result.published_at,
-            "author_channel_id": verification_result.author_channel_id,
-            "author_display_name": verification_result.author_display_name,
-        },
         "verification": {
-            "video_id": verification_result.video_id,
+            "method": "video_access",
+            "video_id": membership_video_id,
             "verified_at": now,
             "session_started_at": request.session_started_at,
         },
@@ -198,8 +171,8 @@ pub async fn issue_card(
     let wallet_start = Instant::now();
 
     // Sanitize display name: Taiwan Digital Wallet only allows Chinese, English, numbers, and underscore
-    let sanitized_name = verification_result
-        .author_display_name
+    let sanitized_name = request
+        .member_display_name
         .chars()
         .filter(|c| c.is_alphanumeric() || *c == '_' || (*c >= '\u{4e00}' && *c <= '\u{9fff}'))
         .collect::<String>();
@@ -232,9 +205,9 @@ pub async fn issue_card(
             issuer_id: issuer.id,
             member_id: member.id,
             membership_level_label: issuer.default_membership_label.clone(),
-            membership_confirmed_at: verification_result.published_at,
-            verification_comment_id: verification_result.comment_id,
-            verification_video_id: verification_result.video_id,
+            membership_confirmed_at: verified_at,
+            verification_comment_id: format!("membership-access:{}", membership_video_id),
+            verification_video_id: membership_video_id.to_string(),
             snapshot_json: snapshot,
         },
     )

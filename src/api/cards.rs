@@ -5,7 +5,7 @@ use axum::{
     middleware,
     response::{IntoResponse, Redirect, Response},
     routing::{delete, get},
-    Form, Router,
+    Router,
 };
 use chrono::{DateTime, Utc};
 use secrecy::ExposeSecret;
@@ -112,16 +112,10 @@ async fn claim_page_for_channel(
     })
 }
 
-#[derive(Deserialize)]
-struct ClaimCardFormForChannel {
-    comment_link: String,
-}
-
 async fn claim_card_for_channel(
     State(state): State<AppState>,
     Path(issuer_id): Path<Uuid>,
     session: Session,
-    Form(form): Form<ClaimCardFormForChannel>,
 ) -> Result<Response, CardsError> {
     let member = get_authenticated_member(&session)
         .await
@@ -212,7 +206,6 @@ async fn claim_card_for_channel(
             member_youtube_user_id: member_record.youtube_user_id,
             member_display_name: member_record.default_display_name,
             member_avatar_url: member_record.avatar_url,
-            comment_link_or_id: form.comment_link,
             session_started_at,
             access_token,
         },

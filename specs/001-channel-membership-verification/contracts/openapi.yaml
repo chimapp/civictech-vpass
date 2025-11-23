@@ -165,15 +165,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [issuer_id, verification_comment_url]
+              required: [issuer_id]
               properties:
                 issuer_id:
                   type: string
                   format: uuid
                   description: Issuer chosen by the member
-                verification_comment_url:
-                  type: string
-                  description: YouTube URL pointing to the member's comment on the issuer’s members-only verification video
                 supplementary_data:
                   type: object
                   additionalProperties: true
@@ -332,6 +329,7 @@ components:
           format: date-time
         verification_comment_id:
           type: string
+          description: Membership verification marker (historically a YouTube comment ID)
         verification_video_id:
           type: string
         issued_at:

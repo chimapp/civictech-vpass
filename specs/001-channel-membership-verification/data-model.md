@@ -39,7 +39,7 @@ Represents YouTube channels authorized to issue cards.
 | youtube_channel_id | TEXT | NOT NULL, UNIQUE | `channels.list` ID |
 | channel_handle | TEXT | NULL | Optional `@handle` |
 | channel_name | TEXT | NOT NULL | Display name |
-| verification_video_id | TEXT | NOT NULL | Members-only video used for comment verification |
+| verification_video_id | TEXT | NOT NULL | Members-only video used for membership verification |
 | default_membership_label | TEXT | NOT NULL | Label included on issued cards (e.g., "Channel Member") |
 | is_active | BOOLEAN | NOT NULL DEFAULT TRUE | Allows soft disabling |
 | created_at | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | |
@@ -84,7 +84,7 @@ Cached metadata about a YouTube member at issuance time.
 |--------|------|-------------|-------|
 | id | UUID | PK | Internal identifier |
 | youtube_user_id | TEXT | NOT NULL, UNIQUE | Stable user identifier |
-| default_display_name | TEXT | NOT NULL | Pulled from YouTube comment author metadata |
+| default_display_name | TEXT | NOT NULL | Latest display name observed during membership verification |
 | avatar_url | TEXT | NULL | Optional CDN URL |
 | locale | TEXT | NULL | ISO language tag |
 | created_at | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | |
@@ -105,10 +105,10 @@ Record of cards issued to members. Includes integrated Taiwan Digital Wallet (æ•
 | issuer_id | UUID | NOT NULL REFERENCES card_issuers(id) | |
 | member_id | UUID | NOT NULL REFERENCES members(id) | |
 | membership_level_label | TEXT | NOT NULL | Issuer-defined human-readable label (e.g., "Channel Member") |
-| membership_confirmed_at | TIMESTAMPTZ | NOT NULL | Comment publication timestamp used for verification |
-| verification_comment_id | TEXT | NOT NULL | `comments.list` ID |
+| membership_confirmed_at | TIMESTAMPTZ | NOT NULL | Timestamp when membership access was verified |
+| verification_comment_id | TEXT | NOT NULL | Membership verification token/marker (historically comment ID) |
 | verification_video_id | TEXT | NOT NULL | Members-only verification video ID |
-| snapshot_json | JSONB | NOT NULL | Raw payload snapshot for auditing (comment + verification context) |
+| snapshot_json | JSONB | NOT NULL | Raw payload snapshot for auditing (verification context) |
 | status | ENUM(card_status) | NOT NULL DEFAULT 'active' | Card lifecycle state: active, expired, revoked, suspended, deleted |
 | expires_at | TIMESTAMPTZ | NULL | Card expiration (30 days default) |
 | last_verified_at | TIMESTAMPTZ | NULL | Last membership verification timestamp |

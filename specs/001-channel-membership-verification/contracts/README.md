@@ -1,6 +1,6 @@
 # VPass API Documentation
 
-VPass enables YouTube channel members to claim digital membership cards via OAuth authentication and comment verification. This document describes the REST API endpoints for card issuance, display, and verification.
+VPass enables YouTube channel members to claim digital membership cards via OAuth authentication and membership access verification. This document describes the REST API endpoints for card issuance, display, and verification.
 
 **API Base URL**: `http://localhost:3000` (development)
 
@@ -99,14 +99,12 @@ Content-Type: application/x-www-form-urlencoded
 **Authentication:** Required (member role)
 
 **Form Parameters:**
-- `issuer_id`: UUID (required)
-- `comment_link_or_id`: YouTube comment URL or comment ID (required)
+- `issuer_id`: UUID (required) — membership will be auto-verified via the member's YouTube session
 
 **Response:** 302 redirect to `/cards/{card_id}` on success
 
 **Error Responses:**
-- `400 Bad Request`: Invalid comment URL/ID format
-- `403 Forbidden`: Comment not found, wrong author, or wrong video
+- `400 Bad Request`: Membership could not be verified for the channel
 - `409 Conflict`: Active unexpired card already exists (message includes expiration date)
 - `503 Service Unavailable`: Taiwan Digital Wallet service unavailable
 
@@ -117,7 +115,6 @@ Content-Type: application/x-www-form-urlencoded
 curl -X POST \
   -b "vpass_session=..." \
   -d "issuer_id=550e8400-e29b-41d4-a716-446655440000" \
-  -d "comment_link_or_id=https://www.youtube.com/watch?v=dQw4w9WgXcQ&lc=UgxABC123" \
   "http://localhost:3000/cards/issue"
 ```
 
@@ -367,9 +364,9 @@ VPass uses HTTP status codes and HTML error pages for browser requests. API endp
 
 - **200 OK**: Success
 - **302 Found**: Redirect (OAuth flows, post-action redirects)
-- **400 Bad Request**: Invalid input (malformed comment URL, missing parameters)
+- **400 Bad Request**: Invalid input or membership could not be verified
 - **401 Unauthorized**: Not authenticated (missing or invalid session)
-- **403 Forbidden**: Authenticated but not authorized (comment ownership mismatch, wrong video)
+- **403 Forbidden**: Authenticated but not authorized for the resource
 - **404 Not Found**: Resource not found (card, issuer, event)
 - **409 Conflict**: Duplicate card exists (active unexpired card already issued)
 - **500 Internal Server Error**: Server-side error
@@ -387,10 +384,8 @@ Active card already exists. Expires: 2025-12-10
 Taiwan Digital Wallet service unavailable. Please try again later.
 ```
 
-**Comment Verification Failures:**
-- `Comment not found`
-- `Comment does not belong to authenticated user`
-- `Comment is not on the verification video`
+**Membership Verification Failures:**
+- `Unable to confirm active membership for this channel`
 
 **YouTube API Errors:**
 - `Rate limit exceeded after retries` (429, retried 3x with exponential backoff)
@@ -405,7 +400,7 @@ Taiwan Digital Wallet service unavailable. Please try again later.
 **Target:** <5 seconds end-to-end
 
 **Breakdown:**
-- YouTube API (comment verification): ~500-2000ms
+- YouTube API (membership access check): ~500-2000ms
 - Wallet API (QR generation): ~500-1500ms
 - Database operations: ~50-200ms
 - Total overhead: ~100ms
@@ -459,11 +454,11 @@ INFO Card issuance completed within target
 - **Display:** Expiration date shown on card page
 - **Expired UI:** QR code replaced with "卡片已過期" message
 
-### Comment Verification (FR-003)
+### Membership Verification (FR-003)
 
-- **No Age Restriction:** Comments from any date accepted
-- **Validation:** Author identity + video target only
-- **API:** YouTube Data API v3 `comments.list`
+- **No Comment Required:** Verification is based on accessing a members-only video with the user's OAuth token
+- **Validation:** Checks if YouTube returns the members-only video for the authenticated user (403 indicates no membership)
+- **API:** YouTube Data API v3 `videos.list`
 
 ---
 
@@ -474,12 +469,11 @@ INFO Card issuance completed within target
 1. `GET /auth/youtube/login?role=member&issuer_id={uuid}` → OAuth consent
 2. YouTube redirects to `/auth/youtube/callback?code=...`
 3. System creates session, redirects to `/cards/claim/{issuer_id}`
-4. Member posts comment on members-only video
-5. Member submits `POST /cards/issue` with comment URL
-6. System verifies comment (YouTube API), generates QR (wallet API), creates card
-7. Redirect to `/cards/{card_id}` showing QR code
-8. Member scans QR in Taiwan Digital Wallet app
-9. Frontend polls `/cards/{card_id}/poll-credential` until credential ready
+4. Member點擊「發行卡片」，系統自動檢查會員資格（YouTube API）
+5. 系統通過檢查後生成 QR（wallet API）、建立卡片
+6. Redirect to `/cards/{card_id}` showing QR code
+7. Member scans QR in Taiwan Digital Wallet app
+8. Frontend polls `/cards/{card_id}/poll-credential` until credential ready
 
 ### Organizer Verifies Member
 
@@ -511,7 +505,6 @@ curl "http://localhost:3000/issuers"
 curl -X POST \
   -b "vpass_session=SESSION_VALUE" \
   -d "issuer_id=550e8400-e29b-41d4-a716-446655440000" \
-  -d "comment_link_or_id=UgxDirect123" \
   "http://localhost:3000/cards/issue"
 
 # Poll credential status
