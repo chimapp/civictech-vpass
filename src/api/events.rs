@@ -79,6 +79,7 @@ pub struct CreateEventRequest {
     pub event_description: Option<String>,
     pub event_date: NaiveDate,
     pub event_location: Option<String>,
+    pub verifier_ref: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -87,6 +88,7 @@ pub struct UpdateEventRequest {
     pub event_description: Option<String>,
     pub event_date: Option<NaiveDate>,
     pub event_location: Option<String>,
+    pub verifier_ref: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -189,6 +191,11 @@ async fn create_event_form(
             "Event name is required".to_string(),
         ));
     }
+    if req.verifier_ref.trim().is_empty() {
+        return Err(EventError::ValidationError(
+            "Verifier reference is required".to_string(),
+        ));
+    }
 
     let event = Event::create(
         &state.pool,
@@ -198,6 +205,7 @@ async fn create_event_form(
             event_description: req.event_description,
             event_date: req.event_date,
             event_location: req.event_location,
+            verifier_ref: req.verifier_ref,
         },
     )
     .await
@@ -222,6 +230,11 @@ async fn create_event_json(
             "Event name is required".to_string(),
         ));
     }
+    if req.verifier_ref.trim().is_empty() {
+        return Err(EventError::ValidationError(
+            "Verifier reference is required".to_string(),
+        ));
+    }
 
     let event = Event::create(
         &state.pool,
@@ -231,6 +244,7 @@ async fn create_event_json(
             event_description: req.event_description,
             event_date: req.event_date,
             event_location: req.event_location,
+            verifier_ref: req.verifier_ref,
         },
     )
     .await
@@ -320,6 +334,15 @@ async fn update_event(
     Path(id): Path<Uuid>,
     Json(req): Json<UpdateEventRequest>,
 ) -> Result<Json<Event>, EventError> {
+    // Validate verifier_ref if provided
+    if let Some(ref verifier_ref) = req.verifier_ref {
+        if verifier_ref.trim().is_empty() {
+            return Err(EventError::ValidationError(
+                "Verifier reference cannot be empty".to_string(),
+            ));
+        }
+    }
+
     let event = Event::update(
         &state.pool,
         id,
@@ -328,6 +351,7 @@ async fn update_event(
             event_description: req.event_description,
             event_date: req.event_date,
             event_location: req.event_location,
+            verifier_ref: req.verifier_ref,
         },
     )
     .await

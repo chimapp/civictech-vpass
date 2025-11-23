@@ -69,6 +69,29 @@
             </div>
         </div>
 
+        <div class="form-section animate-fade-in stagger-2">
+            <div class="form-section-header">
+                <span class="section-number">02</span>
+                <h3 class="section-title">驗證設定</h3>
+            </div>
+
+            <div class="form-field">
+                <label class="field-label required" for="verifier_ref">驗證服務代碼</label>
+                <input
+                    class="field-input"
+                    type="text"
+                    name="verifier_ref"
+                    id="verifier_ref"
+                    placeholder="例如：00000000_chimapp"
+                    required
+                >
+                <span class="field-hint">
+                    <i class="bi bi-shield-check"></i>
+                    請到<a href="https://verifier-sandbox.wallet.gov.tw/" target="_blank">驗證端沙盒系統</a>建立 VP 以取得驗證服務代碼
+                </span>
+            </div>
+        </div>
+
         <!-- Section 03: 確認 -->
         <div class="form-section animate-fade-in stagger-3" style="background: rgba(0, 217, 255, 0.03); border-color: rgba(0, 217, 255, 0.2);">
             <div style="display: flex; align-items: start; gap: 1rem;">

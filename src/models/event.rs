@@ -11,6 +11,7 @@ pub struct Event {
     pub event_description: Option<String>,
     pub event_date: NaiveDate,
     pub event_location: Option<String>,
+    pub verifier_ref: String,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -23,6 +24,7 @@ pub struct CreateEventData {
     pub event_description: Option<String>,
     pub event_date: NaiveDate,
     pub event_location: Option<String>,
+    pub verifier_ref: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +33,7 @@ pub struct UpdateEventData {
     pub event_description: Option<String>,
     pub event_date: Option<NaiveDate>,
     pub event_location: Option<String>,
+    pub verifier_ref: Option<String>,
 }
 
 impl Event {
@@ -38,8 +41,8 @@ impl Event {
     pub async fn create(pool: &PgPool, data: CreateEventData) -> Result<Self, sqlx::Error> {
         let event = sqlx::query_as::<_, Event>(
             r#"
-            INSERT INTO events (issuer_id, event_name, event_description, event_date, event_location)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO events (issuer_id, event_name, event_description, event_date, event_location, verifier_ref)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
             "#,
         )
@@ -48,6 +51,7 @@ impl Event {
         .bind(data.event_description)
         .bind(data.event_date)
         .bind(data.event_location)
+        .bind(data.verifier_ref)
         .fetch_one(pool)
         .await?;
 
@@ -156,6 +160,10 @@ impl Event {
             updates.push(format!("event_location = ${}", bind_count));
             bind_count += 1;
         }
+        if data.verifier_ref.is_some() {
+            updates.push(format!("verifier_ref = ${}", bind_count));
+            bind_count += 1;
+        }
 
         if updates.is_empty() {
             // No fields to update, just return existing event
@@ -180,6 +188,9 @@ impl Event {
         }
         if let Some(location) = data.event_location {
             query_builder = query_builder.bind(location);
+        }
+        if let Some(verifier_ref) = data.verifier_ref {
+            query_builder = query_builder.bind(verifier_ref);
         }
 
         query_builder = query_builder.bind(id);

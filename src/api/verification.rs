@@ -179,8 +179,8 @@ async fn request_qr(
     State(state): State<AppState>,
     Path(event_id): Path<Uuid>,
 ) -> Result<Json<RequestQrResponse>, VerificationApiError> {
-    // Verify event exists
-    Event::find_by_id(&state.pool, event_id)
+    // Verify event exists and get verifier_ref from event
+    let event = Event::find_by_id(&state.pool, event_id)
         .await
         .map_err(VerificationApiError::DatabaseError)?
         .ok_or(VerificationApiError::EventNotFound)?;
@@ -198,19 +198,13 @@ async fn request_qr(
         .as_ref()
         .ok_or_else(|| VerificationApiError::ConfigError("VERIFIER_ACCESS_TOKEN not configured".to_string()))?;
 
-    let verifier_ref = state
-        .config
-        .verifier_ref
-        .as_ref()
-        .ok_or_else(|| VerificationApiError::ConfigError("VERIFIER_REF not configured".to_string()))?;
+    tracing::info!(event_id = %event_id, verifier_ref = %event.verifier_ref, "Requesting verification QR code");
 
-    tracing::info!(event_id = %event_id, "Requesting verification QR code");
-
-    // Call OIDVP API to generate QR code
+    // Call OIDVP API to generate QR code using event's verifier_ref
     let qr_response = oidvp_verifier::request_verification_qr(
         verifier_api_url,
         verifier_access_token.expose_secret(),
-        verifier_ref,
+        &event.verifier_ref,
     )
     .await
     .map_err(VerificationApiError::OidvpError)?;
