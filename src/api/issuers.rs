@@ -105,6 +105,7 @@ struct CreateIssuerForm {
     channel_handle: Option<String>,
     verification_video_id: String,
     default_membership_label: String,
+    vc_uid: Option<String>,
 }
 
 /// Create a new issuer
@@ -129,15 +130,23 @@ async fn create_issuer(
         ));
     }
 
-    let channel_handle = if let Some(h) = form.channel_handle {
-        if h.trim().is_empty() {
+    let channel_handle = form.channel_handle.and_then(|h| {
+        let trimmed = h.trim();
+        if trimmed.is_empty() {
             None
         } else {
-            Some(h.trim().to_string())
+            Some(trimmed.to_string())
         }
-    } else {
-        None
-    };
+    });
+
+    let vc_uid = form.vc_uid.and_then(|value| {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    });
 
     let issuer = CardIssuer::create(
         &state.pool,
@@ -147,7 +156,7 @@ async fn create_issuer(
             channel_name: form.channel_name.trim().to_string(),
             verification_video_id: form.verification_video_id.trim().to_string(),
             default_membership_label: form.default_membership_label.trim().to_string(),
-            vc_uid: None, // Can be set later via update_channel_info
+            vc_uid,
         },
     )
     .await
