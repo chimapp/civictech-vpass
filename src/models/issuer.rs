@@ -76,7 +76,10 @@ impl CardIssuer {
     ) -> Result<Option<Self>, sqlx::Error> {
         let issuer = sqlx::query_as::<_, Self>(
             r#"
-            SELECT * FROM card_issuers WHERE youtube_channel_id = $1
+            SELECT * FROM card_issuers
+            WHERE youtube_channel_id = $1 AND is_active = TRUE
+            ORDER BY created_at DESC
+            LIMIT 1
             "#,
         )
         .bind(channel_id)
